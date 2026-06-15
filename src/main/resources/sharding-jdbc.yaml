@@ -1,0 +1,30 @@
+dataSources:
+  master:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://debian-server:3307/url-convert?allowPublicKeyRetrieval=true
+    username: root
+    password: wei5877261
+  slave:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://debian-server:3308/url-convert?allowPublicKeyRetrieval=true
+    username: root
+    password: wei5877261
+
+rules:
+  - !SINGLE
+    tables:
+      - "*.*"
+  - !READWRITE_SPLITTING
+    dataSourceGroups:
+      readwrite_ds:
+        writeDataSourceName: master
+        readDataSourceNames:
+          - slave
+        loadBalancerName: random
+    loadBalancers:
+      random:
+        type: RANDOM
+props:
+  sql-show: true
