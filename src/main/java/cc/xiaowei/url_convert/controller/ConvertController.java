@@ -3,7 +3,6 @@ package cc.xiaowei.url_convert.controller;
 import cc.xiaowei.url_convert.common.Cast;
 import cc.xiaowei.url_convert.common.Convertor;
 import cc.xiaowei.url_convert.common.RedisId;
-import cc.xiaowei.url_convert.common.ConvertCounter;
 import cc.xiaowei.url_convert.configs.rabbitmq.consts;
 import cc.xiaowei.url_convert.entity.Converted;
 import cc.xiaowei.url_convert.entity.Result;
@@ -15,11 +14,11 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
 @RestController
+@RequestMapping("/convert")
 public class ConvertController {
 
     private static final String SERVER_DOMAIN = "http://localhost:8080";
@@ -30,7 +29,7 @@ public class ConvertController {
     private final RabbitTemplate rabbitTemplate;
 
 
-    @PostMapping("/convert")
+    @PostMapping
     public Result<String> convert(@RequestParam String url) {
 
         if (!urlValidator.isValid(url)) {
