@@ -23,10 +23,10 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class RedirectController {
 
-
     private final RedisTemplate<String, Object> redisTemplate;
     private final ConvertedMapper convertedMapper;
     private final RabbitTemplate rabbitTemplate;
+
 
     @GetMapping("/{uri}")
     public RedirectView redirect(@PathVariable String uri) {
@@ -37,17 +37,19 @@ public class RedirectController {
         }
 
         String url = Cast.cast(redisTemplate.opsForValue().get("uri_id:" + id), String.class);
+
         if (url == null) {
             Converted selected = convertedMapper.selectById(id);
-            if(selected == null){
+            if (selected == null) {
                 redisTemplate.opsForValue().set("uri_id:" + id, "", 10, TimeUnit.MINUTES);
                 BizException.throw_("uri not exist");
-            }else {
+            } else {
                 redisTemplate.opsForValue().set("uri_id:" + id, selected.getOriginal(), 24, TimeUnit.HOURS);
                 url = selected.getOriginal();
             }
         }
-        if ("".equals(url)){
+
+        if ("".equals(url)) {
             BizException.throw_("uri not exist");
         }
 
@@ -61,8 +63,8 @@ public class RedirectController {
         if (id == null) {
             BizException.throw_("Incorrect short link because parsing failed");
         }
-        redisTemplate.delete("uri_ids:" + id);
-        rabbitTemplate.convertAndSend(consts.TOPIC_EXCHANGE,consts.DELETE_ROUTING_KEY,id);
+        redisTemplate.delete("uri_id:" + id);
+        rabbitTemplate.convertAndSend(consts.TOPIC_EXCHANGE, consts.DELETE_ROUTING_KEY, id);
         return Result.success(null);
     }
 }

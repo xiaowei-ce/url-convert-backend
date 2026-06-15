@@ -14,8 +14,6 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.concurrent.TimeUnit;
-
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/convert")
@@ -42,7 +40,7 @@ public class ConvertController {
             BizException.throw_("convert failed");
         }
         String converted_url = String.format("%s/%s", SERVER_DOMAIN, uri);
-        redisTemplate.opsForValue().set("uri_id:" + id, url,24, TimeUnit.HOURS);
+        redisTemplate.opsForValue().set("uri_id:" + id, url);
 
         Converted converted = new Converted();
         converted.setDomain(SERVER_DOMAIN);
