@@ -7,14 +7,19 @@ import cc.xiaowei.url_convert.entity.Converted;
 import cc.xiaowei.url_convert.entity.Result;
 import cc.xiaowei.url_convert.exception.BizException;
 import cc.xiaowei.url_convert.mapper.ConvertedMapper;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.primitives.Longs;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.view.RedirectView;
 
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 
@@ -26,7 +31,14 @@ public class RedirectController {
     private final RedisTemplate<String, Object> redisTemplate;
     private final ConvertedMapper convertedMapper;
     private final RabbitTemplate rabbitTemplate;
+    private final RedissonClient redisson;
 
+    private final Cache<Long, String> localCache = CacheBuilder.newBuilder()
+            .maximumSize(1000)
+            .expireAfterWrite(5, TimeUnit.MINUTES)
+            .initialCapacity(200)
+            .recordStats()
+            .build();
 
     @GetMapping("/{uri}")
     public RedirectView redirect(@PathVariable String uri) {
@@ -37,19 +49,40 @@ public class RedirectController {
         }
 
         String url = Cast.cast(redisTemplate.opsForValue().get("uri_id:" + id), String.class);
-
         if (url == null) {
-            Converted selected = convertedMapper.selectById(id);
-            if (selected == null) {
-                redisTemplate.opsForValue().set("uri_id:" + id, "", 10, TimeUnit.MINUTES);
-                BizException.throw_("uri not exist");
-            } else {
-                redisTemplate.opsForValue().set("uri_id:" + id, selected.getOriginal(), 24, TimeUnit.HOURS);
-                url = selected.getOriginal();
-            }
-        }
+            RLock lock = redisson.getLock(String.valueOf(id));
+            boolean locked = false;
 
-        if ("".equals(url)) {
+            try {
+
+                for (int i = 0; i < 3 && !locked; i++) {
+                    if (!(locked = lock.tryLock(15, TimeUnit.SECONDS))) {
+                        TimeUnit.MILLISECONDS.sleep(150);
+                    }
+                }
+                if (!locked) {
+                    BizException.throw_("please try again later");
+                }
+
+                Converted selected = convertedMapper.selectById(id);
+                if (selected == null) {
+                    redisTemplate.opsForValue().set("uri_id:" + id, "", 24 + ThreadLocalRandom.current().nextInt(1,24), TimeUnit.HOURS);
+                    BizException.throw_("uri not exist");
+                } else {
+                    redisTemplate.opsForValue().set("uri_id:" + id, selected.getOriginal(), 24 + ThreadLocalRandom.current().nextInt(1,24), TimeUnit.HOURS);
+                    url = selected.getOriginal();
+                }
+
+            } catch (Exception e) {
+                BizException.throw_("server error, try again later");
+            } finally {
+                if (locked) {
+                    lock.unlock();
+                }
+            }
+
+        }
+        if (url.isEmpty()) {
             BizException.throw_("uri not exist");
         }
 
