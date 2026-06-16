@@ -20,18 +20,13 @@ public class ConvertCounter {
     private final static LongAdder longAdder = new LongAdder();
     private final RedisTemplate<String, Object> redisTemplate;
 
-    public void increment() {
+    @After("execution(* cc.xiaowei.url_convert.controller.ConvertController.convert(..))")
+    public void pointCut() {
         try {
             longAdder.increment();
         } catch (Exception e) {
             log.error("increment fail", e);
         }
-    }
-
-
-    @After("execution(* cc.xiaowei.url_convert.controller.ConvertController.convert(..))")
-    public void pointCut() {
-        increment();
     }
 
 

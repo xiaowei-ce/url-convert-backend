@@ -1,6 +1,9 @@
 spring:
   application:
     name: url-convert-backend
+  threads:
+    virtual:
+      enabled: true
   mvc:
     contentnegotiation:
       default-content-types: application/json

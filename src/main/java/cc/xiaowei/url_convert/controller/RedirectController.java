@@ -12,6 +12,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.primitives.Longs;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.units.qual.N;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -40,19 +41,20 @@ public class RedirectController {
             .recordStats()
             .build();
 
+    private final RedirectView NOT_FOUND = new RedirectView("http://localhost:5173/not-found.html");
+
     @GetMapping("/{uri}")
     public RedirectView redirect(@PathVariable String uri) {
 
         Long id = Longs.tryParse(Convertor.revert(uri));
         if (id == null) {
-            BizException.throw_("Incorrect short link because parsing failed");
+            return  NOT_FOUND;
         }
 
         String url = Cast.cast(redisTemplate.opsForValue().get("uri_id:" + id), String.class);
         if (url == null) {
             RLock lock = redisson.getLock(String.valueOf(id));
             boolean locked = false;
-
             try {
 
                 for (int i = 0; i < 3 && !locked; i++) {
@@ -66,15 +68,15 @@ public class RedirectController {
 
                 Converted selected = convertedMapper.selectById(id);
                 if (selected == null) {
-                    redisTemplate.opsForValue().set("uri_id:" + id, "", 24 + ThreadLocalRandom.current().nextInt(1,24), TimeUnit.HOURS);
-                    BizException.throw_("uri not exist");
+                    redisTemplate.opsForValue().set("uri_id:" + id, "", 24 * 60 + ThreadLocalRandom.current().nextInt(-6 * 60,6 * 60), TimeUnit.MINUTES);
+                    return NOT_FOUND;
                 } else {
-                    redisTemplate.opsForValue().set("uri_id:" + id, selected.getOriginal(), 24 + ThreadLocalRandom.current().nextInt(1,24), TimeUnit.HOURS);
+                    redisTemplate.opsForValue().set("uri_id:" + id, selected.getOriginal(), 24 * 60 + ThreadLocalRandom.current().nextInt(-6 * 60,6 * 60), TimeUnit.HOURS);
                     url = selected.getOriginal();
                 }
 
-            } catch (Exception e) {
-                BizException.throw_("server error, try again later");
+            } catch (InterruptedException e) {
+               BizException.throw_("service Interrupted");
             } finally {
                 if (locked) {
                     lock.unlock();
@@ -83,7 +85,7 @@ public class RedirectController {
 
         }
         if (url.isEmpty()) {
-            BizException.throw_("uri not exist");
+            return  NOT_FOUND;
         }
 
         return new RedirectView(url);

@@ -27,7 +27,8 @@ public class RabbitMQConfig {
                     value = @Queue(name = consts.CONVERTED_QUEUE, durable = "true"),
                     exchange = @Exchange(name = consts.TOPIC_EXCHANGE, durable = "true"),
                     key = {consts.CONVERTED_ROUTING_KEY}
-            )
+            ),
+            concurrency = "3"
     )
     public  void converted(Converted converted) {
         log.info("received: {}",converted);
@@ -40,7 +41,8 @@ public class RabbitMQConfig {
                     value = @Queue(name = consts.DELETE_QUEUE, durable = "true"),
                     exchange = @Exchange(name = consts.TOPIC_EXCHANGE, durable = "true"),
                     key = {consts.DELETE_ROUTING_KEY}
-            )
+            ),
+            concurrency = "3"
     )
     public void delete(Long id) {
         log.info("delete {}",id);
