@@ -4,10 +4,6 @@ spring:
   threads:
     virtual:
       enabled: true
-  mvc:
-    contentnegotiation:
-      default-content-types: application/json
-      favor-parameter: false
   data:
     redis:
       host: debian-server

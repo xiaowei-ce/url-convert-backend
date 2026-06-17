@@ -10,9 +10,10 @@ import cc.xiaowei.url_convert.mapper.ConvertedMapper;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.primitives.Longs;
+import jakarta.annotation.Nullable;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.checkerframework.checker.units.qual.N;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -20,6 +21,8 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.view.RedirectView;
 
+import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
@@ -34,61 +37,97 @@ public class RedirectController {
     private final RabbitTemplate rabbitTemplate;
     private final RedissonClient redisson;
 
-    private final Cache<Long, String> localCache = CacheBuilder.newBuilder()
-            .maximumSize(1000)
-            .expireAfterWrite(5, TimeUnit.MINUTES)
+
+    private final Cache<String, String> localCache = CacheBuilder.newBuilder()
+            .maximumSize(10_000)
+            .expireAfterAccess(30, TimeUnit.SECONDS)
             .initialCapacity(200)
-            .recordStats()
             .build();
 
     private final RedirectView NOT_FOUND = new RedirectView("http://localhost:5173/not-found.html");
+
+    private final RedirectView RETRY = new RedirectView("http://localhost:5173/retry");
 
     @GetMapping("/{uri}")
     public RedirectView redirect(@PathVariable String uri) {
 
         Long id = Longs.tryParse(Convertor.revert(uri));
         if (id == null) {
-            return  NOT_FOUND;
+            return NOT_FOUND;
+        }
+        String cachedKey = "uri_id:" + id;
+
+        //try local & redis cache
+        RedirectView firstTryGet = buildRedirectFrom2CacheOrNull(id);
+        if (firstTryGet != null){
+            return firstTryGet;
         }
 
-        String url = Cast.cast(redisTemplate.opsForValue().get("uri_id:" + id), String.class);
-        if (url == null) {
-            RLock lock = redisson.getLock(String.valueOf(id));
-            boolean locked = false;
-            try {
+        //update local & redis cache with locked if not hit
+        RLock lock = redisson.getLock(cachedKey);
+        try {
+            if (!lock.tryLock()) {
+                TimeUnit.MILLISECONDS.sleep(100); // just wait for cache, not lock
+                RedirectView otherThreadMayRecachedInMySleepTime = buildRedirectFrom2CacheOrNull(id);
+                return Objects.requireNonNullElse(otherThreadMayRecachedInMySleepTime, RETRY);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        }
 
-                for (int i = 0; i < 3 && !locked; i++) {
-                    if (!(locked = lock.tryLock(15, TimeUnit.SECONDS))) {
-                        TimeUnit.MILLISECONDS.sleep(150);
-                    }
-                }
-                if (!locked) {
-                    BizException.throw_("please try again later");
-                }
-
-                Converted selected = convertedMapper.selectById(id);
-                if (selected == null) {
-                    redisTemplate.opsForValue().set("uri_id:" + id, "", 24 * 60 + ThreadLocalRandom.current().nextInt(-6 * 60,6 * 60), TimeUnit.MINUTES);
-                    return NOT_FOUND;
-                } else {
-                    redisTemplate.opsForValue().set("uri_id:" + id, selected.getOriginal(), 24 * 60 + ThreadLocalRandom.current().nextInt(-6 * 60,6 * 60), TimeUnit.HOURS);
-                    url = selected.getOriginal();
-                }
-
-            } catch (InterruptedException e) {
-               BizException.throw_("service Interrupted");
-            } finally {
-                if (locked) {
-                    lock.unlock();
-                }
+        try {
+            //double check redis & local if got lock
+            RedirectView aReadyGotLockButCheckAgainCauseOtherThreadMayRecached = buildRedirectFrom2CacheOrNull(id);
+            if (aReadyGotLockButCheckAgainCauseOtherThreadMayRecached != null){
+                return aReadyGotLockButCheckAgainCauseOtherThreadMayRecached;
             }
 
-        }
-        if (url.isEmpty()) {
-            return  NOT_FOUND;
+            Converted selected = convertedMapper.selectById(id);
+            if (selected == null) {
+                redisTemplate.opsForValue().set(cachedKey, "", Duration.ofMinutes(15 + randomInt(-5, 15)));
+                localCache.put(cachedKey, "");
+                return NOT_FOUND;
+            }
+
+            //recache redis & local
+            redisTemplate.opsForValue().set(cachedKey, selected.getOriginal(), Duration.ofMinutes(360 + randomInt(-20, 45)));
+            localCache.put(cachedKey, selected.getOriginal());
+            return new RedirectView(selected.getOriginal());
+        } finally {
+            if (lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
         }
 
-        return new RedirectView(url);
+    }
+
+
+    private @Nullable RedirectView buildRedirectFrom2CacheOrNull(@NonNull Long id){
+
+        String cachedKey = "uri_id:" + id;
+
+        //try local
+        String localCached = localCache.getIfPresent(cachedKey);
+        if (localCached != null) {
+            if (localCached.isEmpty()) {
+                return NOT_FOUND;
+            }
+            return new RedirectView(localCached);
+        }
+
+        //try redis
+        String redisCached = Cast.cast(redisTemplate.opsForValue().get(cachedKey), String.class);
+        if (redisCached != null) {
+            if (redisCached.isEmpty()) {
+                localCache.put(cachedKey, "");
+                return NOT_FOUND;
+            }
+            localCache.put(cachedKey, redisCached);
+            return new RedirectView(redisCached);
+        }
+
+        return null;
     }
 
 
@@ -102,4 +141,9 @@ public class RedirectController {
         rabbitTemplate.convertAndSend(consts.TOPIC_EXCHANGE, consts.DELETE_ROUTING_KEY, id);
         return Result.success(null);
     }
+
+    private int randomInt(int origin, int bound) {
+        return ThreadLocalRandom.current().nextInt(origin, bound);
+    }
+
 }
