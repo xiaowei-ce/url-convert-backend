@@ -22,7 +22,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.view.RedirectView;
 
 import java.time.Duration;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
@@ -47,9 +49,18 @@ public class RedirectController {
     private final RedirectView NOT_FOUND = new RedirectView("http://localhost:5173/not-found.html");
 
     private final RedirectView RETRY = new RedirectView("http://localhost:5173/retry");
+    //todo
+    private final RedirectView ERR = new RedirectView("http://localhost:5173/error"){
+        public RedirectView newAddedAttrs(Map attrs){
+            RedirectView newOne = new RedirectView(this.getUrl());
+            newOne.setAttributesMap(attrs);
+            return newOne;
+        }
+    };
 
     @GetMapping("/{uri}")
     public RedirectView redirect(@PathVariable String uri) {
+
 
         Long id = Longs.tryParse(Convertor.revert(uri));
         if (id == null) {
