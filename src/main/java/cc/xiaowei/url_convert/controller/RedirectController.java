@@ -58,7 +58,7 @@ public class RedirectController {
         String cachedKey = "uri_id:" + id;
 
         //try local & redis cache
-        RedirectView firstTryGet = buildRedirectFrom2CacheOrNull(id);
+        RedirectView firstTryGet = buildRedirectFrom2CacheOrNull(cachedKey);
         if (firstTryGet != null){
             return firstTryGet;
         }
@@ -68,7 +68,7 @@ public class RedirectController {
         try {
             if (!lock.tryLock()) {
                 TimeUnit.MILLISECONDS.sleep(100); // just wait for cache, not lock
-                RedirectView otherThreadMayRecachedInMySleepTime = buildRedirectFrom2CacheOrNull(id);
+                RedirectView otherThreadMayRecachedInMySleepTime = buildRedirectFrom2CacheOrNull(cachedKey);
                 return Objects.requireNonNullElse(otherThreadMayRecachedInMySleepTime, RETRY);
             }
         } catch (InterruptedException e) {
@@ -78,7 +78,7 @@ public class RedirectController {
 
         try {
             //double check redis & local if got lock
-            RedirectView aReadyGotLockButCheckAgainCauseOtherThreadMayRecached = buildRedirectFrom2CacheOrNull(id);
+            RedirectView aReadyGotLockButCheckAgainCauseOtherThreadMayRecached = buildRedirectFrom2CacheOrNull(cachedKey);
             if (aReadyGotLockButCheckAgainCauseOtherThreadMayRecached != null){
                 return aReadyGotLockButCheckAgainCauseOtherThreadMayRecached;
             }
@@ -103,9 +103,7 @@ public class RedirectController {
     }
 
 
-    private @Nullable RedirectView buildRedirectFrom2CacheOrNull(@NonNull Long id){
-
-        String cachedKey = "uri_id:" + id;
+    private @Nullable RedirectView buildRedirectFrom2CacheOrNull(@NonNull String cachedKey){
 
         //try local
         String localCached = localCache.getIfPresent(cachedKey);
