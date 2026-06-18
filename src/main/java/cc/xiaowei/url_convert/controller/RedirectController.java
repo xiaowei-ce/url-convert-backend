@@ -6,6 +6,7 @@ import cc.xiaowei.url_convert.configs.rabbitmq.consts;
 import cc.xiaowei.url_convert.entity.Converted;
 import cc.xiaowei.url_convert.entity.Result;
 import cc.xiaowei.url_convert.exception.BizException;
+import cc.xiaowei.url_convert.exception.RedirectException;
 import cc.xiaowei.url_convert.mapper.ConvertedMapper;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -24,7 +25,6 @@ import org.springframework.web.servlet.view.RedirectView;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Properties;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
@@ -39,28 +39,21 @@ public class RedirectController {
     private final RabbitTemplate rabbitTemplate;
     private final RedissonClient redisson;
 
-
     private final Cache<String, String> localCache = CacheBuilder.newBuilder()
             .maximumSize(10_000)
             .expireAfterAccess(30, TimeUnit.SECONDS)
             .initialCapacity(200)
             .build();
 
-    private final RedirectView NOT_FOUND = new RedirectView("http://localhost:5173/not-found.html");
+    private static final String DOMAIN = "http://localhost:5173";
 
-    private final RedirectView RETRY = new RedirectView("http://localhost:5173/retry");
-    //todo
-    private final RedirectView ERR = new RedirectView("http://localhost:5173/error"){
-        public RedirectView newAddedAttrs(Map attrs){
-            RedirectView newOne = new RedirectView(this.getUrl());
-            newOne.setAttributesMap(attrs);
-            return newOne;
-        }
-    };
+    private static final String NOT_FOUND_URL = "/not-found.html";
+    public static final String RETRY_URL = "/retry";
+    private final RedirectView NOT_FOUND = new RedirectView(NOT_FOUND_URL);
+
 
     @GetMapping("/{uri}")
     public RedirectView redirect(@PathVariable String uri) {
-
 
         Long id = Longs.tryParse(Convertor.revert(uri));
         if (id == null) {
@@ -80,11 +73,16 @@ public class RedirectController {
             if (!lock.tryLock()) {
                 TimeUnit.MILLISECONDS.sleep(100); // just wait for cache, not lock
                 RedirectView otherThreadMayRecachedInMySleepTime = buildRedirectFrom2CacheOrNull(cachedKey);
-                return Objects.requireNonNullElse(otherThreadMayRecachedInMySleepTime, RETRY);
+
+                RedirectView retryView = new RedirectView(RETRY_URL);
+                Map<String, String> attrs = Map.of("uri", uri);
+                retryView.setAttributesMap(attrs);
+
+                return Objects.requireNonNullElse(otherThreadMayRecachedInMySleepTime, retryView);
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new RuntimeException(e);
+            RedirectException.throw_(e.getMessage());
         }
 
         try {
@@ -141,10 +139,10 @@ public class RedirectController {
 
 
     @DeleteMapping("/del/{uri}")
-    public Result<String> delete(@PathVariable String uri) {
+    public Result<?> delete(@PathVariable String uri) {
         Long id = Longs.tryParse(Convertor.revert(uri));
         if (id == null) {
-            BizException.throw_("Incorrect short link because parsing failed");
+            BizException.throw_("incorrect short link");
         }
         redisTemplate.delete("uri_id:" + id);
         rabbitTemplate.convertAndSend(consts.TOPIC_EXCHANGE, consts.DELETE_ROUTING_KEY, id);
@@ -153,6 +151,14 @@ public class RedirectController {
 
     private int randomInt(int origin, int bound) {
         return ThreadLocalRandom.current().nextInt(origin, bound);
+    }
+
+    private RedirectView buildRedirect(String url,Map<String, ?> attrs){
+        RedirectView redirectView = new RedirectView(url);
+        if (!attrs.isEmpty()){
+            redirectView.setAttributesMap(attrs);
+        }
+        return redirectView;
     }
 
 }

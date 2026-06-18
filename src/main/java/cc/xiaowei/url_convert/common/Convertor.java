@@ -1,6 +1,5 @@
 package cc.xiaowei.url_convert.common;
 
-import cc.xiaowei.url_convert.exception.BizException;
 import io.seruco.encoding.base62.Base62;
 
 import java.nio.charset.Charset;
@@ -31,7 +30,7 @@ public class Convertor {
     public static String revert(String uri, Charset charset) {
         byte[] bytes = uri.getBytes(charset);
         if (!base62.isBase62Encoding(bytes)){
-            BizException.throw_("uri is not encoded correctly");
+            return null;
         }
         return new String(base62.decode(bytes), charset);
     }
