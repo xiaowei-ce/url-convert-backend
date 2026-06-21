@@ -145,6 +145,7 @@ public class RedirectController {
             BizException.throw_("incorrect short link");
         }
         redisTemplate.delete("uri_id:" + id);
+        localCache.invalidate("uri_id:" + id);
         rabbitTemplate.convertAndSend(consts.TOPIC_EXCHANGE, consts.DELETE_ROUTING_KEY, id);
         return Result.success(null);
     }
