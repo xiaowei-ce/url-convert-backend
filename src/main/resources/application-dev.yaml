@@ -1,0 +1,36 @@
+spring:
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+      password: wei5877261
+
+  datasource:
+    url:
+    username:
+    password:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  rabbitmq:
+    host:
+    port: 5672
+    username: root
+    password: wei5877261
+    virtual-host: /url-convert
+    connection-timeout: 500ms
+    #publisher confirm, publisher return
+    publisher-confirm-type: correlated
+    publisher-returns: true
+
+    template:
+      #路由失败返回 route failed return
+      mandatory: true
+      #retry
+      retry:
+        enabled: true
+        initial-interval: 500ms
+        multiplier: 1
+        max-attempts: 3
+    listener:
+      direct:
+        prefetch: 1

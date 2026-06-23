@@ -1,3 +1,5 @@
+mode:
+  type: Standalone
 dataSources:
   master:
     dataSourceClassName: com.zaxxer.hikari.HikariDataSource
@@ -23,6 +25,7 @@ rules:
         readDataSourceNames:
           - slave
         loadBalancerName: random
+        transactionalReadQueryStrategy: PRIMARY #事务内读主库
     loadBalancers:
       random:
         type: RANDOM
