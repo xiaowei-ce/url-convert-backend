@@ -2,7 +2,7 @@ package cc.xiaowei.url_convert.controller;
 
 import cc.xiaowei.url_convert.common.Cast;
 import cc.xiaowei.url_convert.common.Convertor;
-import cc.xiaowei.url_convert.common.RedisId;
+import cc.xiaowei.url_convert.common.IDFactory;
 import cc.xiaowei.url_convert.configs.rabbitmq.consts;
 import cc.xiaowei.url_convert.entity.Converted;
 import cc.xiaowei.url_convert.entity.Result;
@@ -24,7 +24,7 @@ public class ConvertController {
     private static final String SERVER_DOMAIN = "http://localhost:8080";
 
     private static final UrlValidator urlValidator = new UrlValidator(UrlValidator.ALLOW_ALL_SCHEMES);
-    private final RedisId redisId;
+    private final IDFactory IDFactory;
     private final RedisTemplate<String, Object> redisTemplate;
     private final RabbitTemplate rabbitTemplate;
 
@@ -35,7 +35,7 @@ public class ConvertController {
         if (!urlValidator.isValid(url)) {
             BizException.throw_("Url is invalid");
         }
-        Long id = redisId.get();
+        Long id = IDFactory.get();
 
         String uri = Convertor.convert(id);
         if (Strings.isNullOrEmpty(uri)) {

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.xiaowei.url_convert.mapper.URLMapMapper">
+
+    <update id="createShardingTable">
+        CREATE TABLE `#{tableName}`
+        (
+            id      BIGINT UNSIGNED    NOT NULL,
+            url     varchar(1024)      NOT NULL,
+            deleted BOOL DEFAULT false NULL,
+            CONSTRAINT url_map_pk PRIMARY KEY (id)
+        )
+            ENGINE = InnoDB
+            DEFAULT CHARSET = utf8mb4
+            COLLATE = utf8mb4_0900_ai_ci;
+    </update>
+</mapper>

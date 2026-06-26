@@ -1,5 +1,7 @@
 mode:
   type: Standalone
+props:
+  sql-show: true
 dataSources:
   master:
     dataSourceClassName: com.zaxxer.hikari.HikariDataSource
@@ -15,19 +17,32 @@ dataSources:
     password: wei5877261
 
 rules:
-  - !SINGLE
-    tables:
-      - "*.*"
+#  - !SINGLE
+#    tables:
+#      - "*.*"
   - !READWRITE_SPLITTING
     dataSourceGroups:
-      readwrite_ds:
+      rw_group0:
         writeDataSourceName: master
         readDataSourceNames:
           - slave
         loadBalancerName: random
-        transactionalReadQueryStrategy: PRIMARY #事务内读主库
+        transactionalReadQueryStrategy: PRIMARY
     loadBalancers:
       random:
         type: RANDOM
-props:
-  sql-show: true
+  - !SHARDING
+    tables:
+      url_map:
+        actualDataNodes: rw_group0.url_map
+        tableStrategy:
+          standard:
+            shardingColumn: id
+            shardingAlgorithmName: timestamp_mm
+
+    shardingAlgorithms:
+      timestamp_mm:
+        type: CLASS_BASED
+        props:
+          strategy: STANDARD
+          algorithmClassName: cc.xiaowei.url_convert.common.IdTimeStampStandardShardingAlgorithm

@@ -6,14 +6,18 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
+import java.time.ZoneId;
+
 @SpringBootApplication
 @MapperScan("cc.xiaowei.url_convert.mapper")
 @EnableAspectJAutoProxy(exposeProxy = true)
 @EnableScheduling
-public class UrlConvertBackendApplication {
+public class Application {
+
+    public static final ZoneId ZONE_ID = ZoneId.of("Asia/Shanghai");
 
     public static void main(String[] args) {
-        SpringApplication.run(UrlConvertBackendApplication.class, args);
+        SpringApplication.run(Application.class, args);
     }
 
 }

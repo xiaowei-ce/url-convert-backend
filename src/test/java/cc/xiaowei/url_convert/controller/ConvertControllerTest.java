@@ -42,4 +42,9 @@ public class ConvertControllerTest {
          log.info("decoded -> {}", new String(base62.decode(target),StandardCharsets.UTF_8));
 
     }
+
+    @Test
+    public void reTest(){
+
+    }
 }

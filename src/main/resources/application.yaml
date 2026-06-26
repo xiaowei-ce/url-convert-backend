@@ -16,3 +16,9 @@ mybatis-plus:
       logic-delete-field: deleted
       logic-delete-value: 1
       logic-not-delete-value: 0
+
+sharding-tables-vals:
+  table-name-template: url_map_<{}> #<{}> will be replaced eg: url_map_202606
+  lower-date: 202606
+  upper-date: 205012
+  date-pattern: yyyyMM
