@@ -2,7 +2,7 @@ package cc.xiaowei.url_convert.common;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.aspectj.lang.annotation.After;
+import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Async;
@@ -15,12 +15,12 @@ import java.util.concurrent.atomic.LongAdder;
 @Component
 @Aspect
 @RequiredArgsConstructor
-public class ConvertCounter {
+public class MappedCounter {
 
     private final static LongAdder longAdder = new LongAdder();
     private final RedisTemplate<String, Object> redisTemplate;
 
-    @After("execution(* cc.xiaowei.url_convert.controller.MapURLController.mapURL(..))")
+    @AfterReturning("execution(* cc.xiaowei.url_convert.controller.MapURLController.mapURL(..))")
     public void pointCut() {
         try {
             longAdder.increment();
