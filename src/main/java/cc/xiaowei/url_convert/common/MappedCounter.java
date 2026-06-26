@@ -1,5 +1,6 @@
 package cc.xiaowei.url_convert.common;
 
+import cc.xiaowei.url_convert.configs.RedisConsts;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.annotation.AfterReturning;
@@ -31,12 +32,12 @@ public class MappedCounter {
 
 
     @Async
-    @Scheduled(fixedDelay = 6000 * 5)
+    @Scheduled(fixedDelay = 10000 * 30)
     public void update(){
-        long sumThenReset = longAdder.sumThenReset();
-        if (sumThenReset == 0) return;
-        redisTemplate.opsForValue().increment("statistics:convert_count",sumThenReset);
-        log.info("update convert count:{}", sumThenReset);
+        long localCount = longAdder.sumThenReset();
+        if (localCount == 0) return;
+        redisTemplate.opsForValue().increment(RedisConsts.STATISTICS_MAPPED_COUNT_KEY, localCount);
+        log.info("update convert count:{}", localCount);
     }
 
 }
