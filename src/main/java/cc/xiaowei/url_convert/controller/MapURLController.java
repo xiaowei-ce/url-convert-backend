@@ -1,11 +1,12 @@
 package cc.xiaowei.url_convert.controller;
 
 import cc.xiaowei.url_convert.common.Cast;
-import cc.xiaowei.url_convert.common.Convertor;
+import cc.xiaowei.url_convert.common.IdBase62Convertor;
 import cc.xiaowei.url_convert.common.IDFactory;
-import cc.xiaowei.url_convert.configs.rabbitmq.consts;
-import cc.xiaowei.url_convert.entity.Converted;
+import cc.xiaowei.url_convert.configs.RedisConsts;
+import cc.xiaowei.url_convert.configs.rabbitmq.RabbitConsts;
 import cc.xiaowei.url_convert.entity.Result;
+import cc.xiaowei.url_convert.entity.URLMap;
 import cc.xiaowei.url_convert.exception.BizException;
 import com.google.common.base.Strings;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/convert")
-public class ConvertController {
+public class MapURLController {
 
     private static final String SERVER_DOMAIN = "http://localhost:8080";
 
@@ -30,25 +31,24 @@ public class ConvertController {
 
 
     @PostMapping
-    public Result<String> convert(@RequestParam String url) {
+    public Result<String> mapURL(@RequestParam String url) {
 
         if (!urlValidator.isValid(url)) {
             BizException.throw_("Url is invalid");
         }
-        Long id = IDFactory.get();
+        Long id = IDFactory.next();
 
-        String uri = Convertor.convert(id);
-        if (Strings.isNullOrEmpty(uri)) {
-            BizException.throw_("convert failed");
+        String mappedUri = IdBase62Convertor.idTobase62str(id);
+        if (Strings.isNullOrEmpty(mappedUri)) {
+            BizException.throw_("URL map failed");
         }
-        String converted_url = String.format("%s/%s", SERVER_DOMAIN, uri);
-        redisTemplate.opsForValue().set("uri_id:" + id, url,12 , TimeUnit.HOURS);
+        String converted_url = String.format("%s/%s", SERVER_DOMAIN, mappedUri);
+        redisTemplate.opsForValue().set(RedisConsts.MAPPED_REDIS_KEY_REFIX + id, url,12 , TimeUnit.HOURS);
 
-        Converted converted = new Converted();
-        converted.setDomain(SERVER_DOMAIN);
-        converted.setId(id);
-        converted.setOriginal(url);
-        rabbitTemplate.convertAndSend(consts.TOPIC_EXCHANGE, consts.CONVERTED_ROUTING_KEY, converted);
+        URLMap mapped = new URLMap();
+        mapped.setId(id);
+        mapped.setUrl(url);
+        rabbitTemplate.convertAndSend(RabbitConsts.TOPIC_EXCHANGE, RabbitConsts.CONVERTED_ROUTING_KEY, mapped);
 
         return Result.success(converted_url);
     }

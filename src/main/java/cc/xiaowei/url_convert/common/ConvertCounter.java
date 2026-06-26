@@ -20,7 +20,7 @@ public class ConvertCounter {
     private final static LongAdder longAdder = new LongAdder();
     private final RedisTemplate<String, Object> redisTemplate;
 
-    @After("execution(* cc.xiaowei.url_convert.controller.ConvertController.convert(..))")
+    @After("execution(* cc.xiaowei.url_convert.controller.MapURLController.mapURL(..))")
     public void pointCut() {
         try {
             longAdder.increment();

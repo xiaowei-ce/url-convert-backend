@@ -1,7 +1,8 @@
 package cc.xiaowei.url_convert.configs.rabbitmq;
 
-import cc.xiaowei.url_convert.entity.Converted;
-import cc.xiaowei.url_convert.mapper.ConvertedMapper;
+import cc.xiaowei.url_convert.configs.RedisConsts;
+import cc.xiaowei.url_convert.entity.URLMap;
+import cc.xiaowei.url_convert.mapper.URLMapMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.Exchange;
@@ -19,35 +20,35 @@ import org.springframework.data.redis.core.RedisTemplate;
 @RequiredArgsConstructor
 public class RabbitMQConfig {
 
-    private final ConvertedMapper convertedMapper;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final URLMapMapper uRLMapMapper;
 
     @RabbitListener(
             bindings = @QueueBinding(
-                    value = @Queue(name = consts.CONVERTED_QUEUE, durable = "true"),
-                    exchange = @Exchange(name = consts.TOPIC_EXCHANGE, durable = "true"),
-                    key = {consts.CONVERTED_ROUTING_KEY}
+                    value = @Queue(name = RabbitConsts.CONVERTED_QUEUE, durable = "true"),
+                    exchange = @Exchange(name = RabbitConsts.TOPIC_EXCHANGE, durable = "true"),
+                    key = {RabbitConsts.CONVERTED_ROUTING_KEY}
             ),
             concurrency = "3"
     )
-    public  void converted(Converted converted) {
-        log.info("received: {}",converted);
-        convertedMapper.insert(converted);
+    public  void converted(URLMap mapped) {
+        log.info("received: {}",mapped);
+        uRLMapMapper.insert(mapped);
     }
 
 
     @RabbitListener(
             bindings = @QueueBinding(
-                    value = @Queue(name = consts.DELETE_QUEUE, durable = "true"),
-                    exchange = @Exchange(name = consts.TOPIC_EXCHANGE, durable = "true"),
-                    key = {consts.DELETE_ROUTING_KEY}
+                    value = @Queue(name = RabbitConsts.DELETE_QUEUE, durable = "true"),
+                    exchange = @Exchange(name = RabbitConsts.TOPIC_EXCHANGE, durable = "true"),
+                    key = {RabbitConsts.DELETE_ROUTING_KEY}
             ),
             concurrency = "3"
     )
     public void delete(Long id) {
         log.info("delete {}",id);
-        redisTemplate.delete("uri_id:" + id);
-        convertedMapper.deleteById(id);
+        redisTemplate.delete(RedisConsts.MAPPED_REDIS_KEY_REFIX + id);
+        uRLMapMapper.deleteById(id);
     }
 
 

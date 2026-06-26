@@ -11,10 +11,10 @@ public class IDFactoryTest {
     IDFactory IDFactory;
 
     @Test
-    public void getTest(){
+    public void nextTest(){
 //        for (int i = 0; i < 5000; i++) {
 //            redisId.get();
 //        }
-        System.out.println(IDFactory.get());
+        System.out.println(IDFactory.next());
     }
 }

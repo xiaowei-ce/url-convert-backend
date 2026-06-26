@@ -18,11 +18,11 @@ public class IDFactory {
 
     private final RedissonClient redissonClient;
 
-    public Long get(){
+    public Long next(){
         long timestamp_sec_utc = Instant.now().getEpochSecond();
         ZonedDateTime zonedDateTime = Instant.ofEpochSecond(timestamp_sec_utc).atZone(Application.ZONE_ID);
-        String redisKeyPrefix = zonedDateTime.format(DATE_TIME_FORMATTER);
-        long increment = redissonClient.getAtomicLong(redisKeyPrefix).incrementAndGet();
+        String incrementKey = zonedDateTime.format(DATE_TIME_FORMATTER);
+        long increment = redissonClient.getAtomicLong(incrementKey).incrementAndGet();
         return (timestamp_sec_utc - START_STAMP_SEC_UTC) << INCREMENT_BITS | increment;
     }
 

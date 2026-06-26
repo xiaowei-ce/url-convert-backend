@@ -10,23 +10,13 @@ import java.nio.charset.StandardCharsets;
 
 @SpringBootTest
 @Slf4j
-public class ConvertControllerTest {
+public class MapURLControllerTest {
 
     @Autowired
-    ConvertController convertController;
+    MapURLController mapURLController;
 
     @Test
-    public void convertTest(){
-
-//        162671886836003
-//        MUMpmLOFEcqy0Y9BhJD9
-
-//        Base62.createInstance().decode();
-
-//        System.out.println(convertController.convert("http://baidu.com"));
-//
-//        Base62 base62 = Base62.createInstance();
-//        System.out.println(new String(base62.decode("MUMpmLOFEcqy0Y9BhJD9".getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8));
+    public void mapURLTest(){
     }
 
 
@@ -40,11 +30,6 @@ public class ConvertControllerTest {
 
          log.info("encoded -> {}", new String(base62.encode(origin),StandardCharsets.UTF_8));
          log.info("decoded -> {}", new String(base62.decode(target),StandardCharsets.UTF_8));
-
-    }
-
-    @Test
-    public void reTest(){
 
     }
 }

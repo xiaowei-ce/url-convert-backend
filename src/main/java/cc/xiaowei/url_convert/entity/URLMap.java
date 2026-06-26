@@ -3,9 +3,11 @@ package cc.xiaowei.url_convert.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.Data;
 
 @TableName("url_map")
-public class URLMap { //todo
+@Data
+public class URLMap {
     @TableId(type = IdType.NONE)
     Long id;
     String url;

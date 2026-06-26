@@ -1,13 +1,14 @@
 package cc.xiaowei.url_convert.controller;
 
 import cc.xiaowei.url_convert.common.Cast;
-import cc.xiaowei.url_convert.common.Convertor;
-import cc.xiaowei.url_convert.configs.rabbitmq.consts;
-import cc.xiaowei.url_convert.entity.Converted;
+import cc.xiaowei.url_convert.common.IdBase62Convertor;
+import cc.xiaowei.url_convert.configs.RedisConsts;
+import cc.xiaowei.url_convert.configs.rabbitmq.RabbitConsts;
 import cc.xiaowei.url_convert.entity.Result;
+import cc.xiaowei.url_convert.entity.URLMap;
 import cc.xiaowei.url_convert.exception.BizException;
 import cc.xiaowei.url_convert.exception.RedirectException;
-import cc.xiaowei.url_convert.mapper.ConvertedMapper;
+import cc.xiaowei.url_convert.mapper.URLMapMapper;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.primitives.Longs;
@@ -35,7 +36,6 @@ import java.util.concurrent.TimeUnit;
 public class RedirectController {
 
     private final RedisTemplate<String, Object> redisTemplate;
-    private final ConvertedMapper convertedMapper;
     private final RabbitTemplate rabbitTemplate;
     private final RedissonClient redisson;
 
@@ -50,16 +50,17 @@ public class RedirectController {
     private static final String NOT_FOUND_URL = "/not-found.html";
     public static final String RETRY_URL = "/retry";
     private final RedirectView NOT_FOUND = new RedirectView(NOT_FOUND_URL);
+    private final URLMapMapper uRLMapMapper;
 
 
     @GetMapping("/{uri}")
     public RedirectView redirect(@PathVariable String uri) {
 
-        Long id = Longs.tryParse(Convertor.revert(uri));
+        Long id = Longs.tryParse(IdBase62Convertor.base62ToIdStr(uri));
         if (id == null) {
             return NOT_FOUND;
         }
-        String cachedKey = "uri_id:" + id;
+        String cachedKey = RedisConsts.MAPPED_REDIS_KEY_REFIX + id;
 
         //try local & redis cache
         RedirectView firstTryGet = buildRedirectFrom2CacheOrNull(cachedKey);
@@ -92,17 +93,17 @@ public class RedirectController {
                 return aReadyGotLockButCheckAgainCauseOtherThreadMayRecached;
             }
 
-            Converted selected = convertedMapper.selectById(id);
-            if (selected == null) {
+            URLMap mapped = uRLMapMapper.selectById(id);
+            if (mapped == null) {
                 redisTemplate.opsForValue().set(cachedKey, "", Duration.ofMinutes(15 + randomInt(-5, 15)));
                 localCache.put(cachedKey, "");
                 return NOT_FOUND;
             }
 
             //recache redis & local
-            redisTemplate.opsForValue().set(cachedKey, selected.getOriginal(), Duration.ofMinutes(360 + randomInt(-20, 45)));
-            localCache.put(cachedKey, selected.getOriginal());
-            return new RedirectView(selected.getOriginal());
+            redisTemplate.opsForValue().set(cachedKey, mapped.getUrl(), Duration.ofMinutes(360 + randomInt(-20, 45)));
+            localCache.put(cachedKey, mapped.getUrl());
+            return new RedirectView(mapped.getUrl());
         } finally {
             if (lock.isHeldByCurrentThread()) {
                 lock.unlock();
@@ -140,13 +141,15 @@ public class RedirectController {
 
     @DeleteMapping("/del/{uri}")
     public Result<?> delete(@PathVariable String uri) {
-        Long id = Longs.tryParse(Convertor.revert(uri));
+        Long id = Longs.tryParse(IdBase62Convertor.base62ToIdStr(uri));
         if (id == null) {
             BizException.throw_("incorrect short link");
         }
-        redisTemplate.delete("uri_id:" + id);
-        localCache.invalidate("uri_id:" + id);
-        rabbitTemplate.convertAndSend(consts.TOPIC_EXCHANGE, consts.DELETE_ROUTING_KEY, id);
+
+        String key = RedisConsts.MAPPED_REDIS_KEY_REFIX + id;
+        redisTemplate.delete(key);
+        localCache.invalidate(key);
+        rabbitTemplate.convertAndSend(RabbitConsts.TOPIC_EXCHANGE, RabbitConsts.DELETE_ROUTING_KEY, id);
         return Result.success(null);
     }
 
