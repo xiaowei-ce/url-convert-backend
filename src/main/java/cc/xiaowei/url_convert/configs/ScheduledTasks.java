@@ -39,18 +39,23 @@ public class ScheduledTasks {
     private void init(){
         log.info("init");
         YearMonth yearMonthNow = YearMonth.now(Application.ZONE_ID);
-        shardingTableCreate(yearMonthNow);
+        createTable(yearMonthNow);
     }
 
     @Scheduled(cron = "0 0 4 1 *  ?", zone = "Asia/Shanghai")
     public void shardingTablesCreate() {
         //todo mq
         YearMonth yearMonthNext = YearMonth.now(Application.ZONE_ID).plusMonths(1);
-        shardingTableCreate(yearMonthNext);
+       createTable(yearMonthNext);
     }
 
 
-    private void createTable(String tableName){
+    private void createTable(YearMonth yearMonth){
+        if (yearMonth.isAfter(yearMonthShardingTableVals.getUpperDate()) || yearMonth.isBefore(yearMonthShardingTableVals.getLowerDate())) {
+            log.error("check sharding date config: lower-date < now < upper-date");
+            return;
+        }
+        String tableName = yearMonthShardingTableVals.shardingTableNameFromFormattedYearMonth(yearMonth);
         try {
             jdbcTemplate.execute(CREATE_TABLE_SQL.formatted(tableName));
         } catch (Exception e) {
@@ -58,12 +63,5 @@ public class ScheduledTasks {
         }
     }
 
-    private void shardingTableCreate(YearMonth yearMonth){
-        if (yearMonth.isAfter(yearMonthShardingTableVals.getUpperDate()) || yearMonth.isBefore(yearMonthShardingTableVals.getLowerDate())) {
-            log.error("check sharding date config: lower-date < now < upper-date");
-            return;
-        }
-        String tableName = yearMonthShardingTableVals.shardingTableNameFromFormattedYearMonth(yearMonth);
-        createTable(tableName);
-    }
+
 }
