@@ -1,6 +1,5 @@
 package cc.xiaowei.url_convert.properties;
 
-import cc.xiaowei.url_convert.Application;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.Setter;
@@ -9,7 +8,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import java.time.YearMonth;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -27,21 +25,19 @@ public class YearMonthShardingTableVals {
     private YearMonth upperDate;
 
     private final Collection<String> shardingTables = new LinkedList<>();
-    private final String FMT = "<{}>";
     public static YearMonthShardingTableVals staticYearMonthShardingTableVals;
 
     @PostConstruct
     private void init(){
         YearMonth lowerDate = this.getLowerDate();
         while (!lowerDate.isAfter(upperDate)){
-            shardingTables.add(tableNameTemplate.replace(FMT, lowerDate.format(datePattern)));
+            shardingTables.add(String.format(tableNameTemplate, lowerDate.format(datePattern)));
             lowerDate = lowerDate.plusMonths(1L);
         }
 
         staticYearMonthShardingTableVals = this;
         log.info("init shardingTables:{}",shardingTables);
     }
-
 
     public void setDatePattern(String datePattern){
         this.datePattern = DateTimeFormatter.ofPattern(datePattern);
@@ -51,5 +47,8 @@ public class YearMonthShardingTableVals {
     }
     public void setUpperDate(String upperDate){
         this.upperDate = YearMonth.parse(upperDate, datePattern);
+    }
+    public String shardingTableNameFromFormattedYearMonth(YearMonth yearMonth){
+        return String.format(tableNameTemplate, yearMonth.format(datePattern));
     }
 }

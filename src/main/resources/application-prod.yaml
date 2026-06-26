@@ -8,6 +8,10 @@ spring:
   datasource:
     driver-class-name: org.apache.shardingsphere.driver.ShardingSphereDriver
     url: jdbc:shardingsphere:classpath:sharding-jdbc.yaml
+    hikari:
+      initialization-fail-timeout: 10
+      minimum-idle: 5
+      connection-timeout: 10000
   rabbitmq:
     host: debian-server
     port: 5672
