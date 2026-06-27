@@ -27,7 +27,6 @@ public class IdTimeStampStandardShardingAlgorithm implements StandardShardingAlg
         log.info("doSharding availableTargetNames:{} shardingValue:{}", availableTargetNames, shardingValue);
 
         String shardedTableName = staticYearMonthShardingTableVals.shardingTableNameFromFormattedYearMonth(IDFactory.extractYearMonth(shardingValue.getValue()));
-
         if (!availableTargetNames.contains(shardedTableName)) {
             throw new AlgorithmInitializationException(this, "shardedTableNames not in availableTargetNames");
         }
