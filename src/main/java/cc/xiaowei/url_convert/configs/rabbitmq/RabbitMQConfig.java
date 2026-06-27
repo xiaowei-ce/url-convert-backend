@@ -29,7 +29,7 @@ public class RabbitMQConfig {
                     exchange = @Exchange(name = RabbitConsts.TOPIC_EXCHANGE, durable = "true"),
                     key = {RabbitConsts.MAPPED_ROUTING_KEY}
             ),
-            concurrency = "3"
+            concurrency = "10"
     )
     public  void mappedInsert(URLMap mapped) {
         log.info("received: {}",mapped);

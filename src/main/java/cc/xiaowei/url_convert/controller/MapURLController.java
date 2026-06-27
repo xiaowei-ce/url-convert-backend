@@ -38,7 +38,7 @@ public class MapURLController {
         }
         Long id = IDFactory.next();
 
-        String mappedUri = IdBase62Convertor.idTobase62str(id);
+        String mappedUri = IdBase62Convertor.idToBase62str(id);
         if (Strings.isNullOrEmpty(mappedUri)) {
             BizException.throw_("URL map failed");
         }

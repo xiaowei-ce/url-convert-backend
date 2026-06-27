@@ -1,6 +1,7 @@
 package cc.xiaowei.url_convert.controller;
 
 import cc.xiaowei.url_convert.common.Cast;
+import cc.xiaowei.url_convert.common.FrontPages;
 import cc.xiaowei.url_convert.common.IdBase62Convertor;
 import cc.xiaowei.url_convert.configs.RedisConsts;
 import cc.xiaowei.url_convert.configs.rabbitmq.RabbitConsts;
@@ -45,18 +46,17 @@ public class RedirectController {
             .initialCapacity(200)
             .build();
 
-    private static final String DOMAIN = "http://localhost:5173";
-
-    private static final String NOT_FOUND_URL = "/not-found.html";
-    public static final String RETRY_URL = "/retry";
-    private final RedirectView NOT_FOUND = new RedirectView(NOT_FOUND_URL);
+    private final RedirectView NOT_FOUND = new RedirectView(FrontPages.NOT_FOUND_URL);
     private final URLMapMapper uRLMapMapper;
 
 
     @GetMapping("/{uri}")
     public RedirectView redirect(@PathVariable String uri) {
-
-        Long id = Longs.tryParse(IdBase62Convertor.base62ToIdStr(uri));
+        String idStrOrNull = IdBase62Convertor.base62ToIdStrOrNull(uri);
+        if (idStrOrNull == null){
+            return NOT_FOUND;
+        }
+        Long id = Longs.tryParse(idStrOrNull);
         if (id == null) {
             return NOT_FOUND;
         }
@@ -69,13 +69,14 @@ public class RedirectController {
         }
 
         //update local & redis cache with locked if not hit
-        RLock lock = redisson.getLock(cachedKey);
+        String lockKey = ""+id;
+        RLock lock = redisson.getLock(lockKey);
         try {
             if (!lock.tryLock()) {
                 TimeUnit.MILLISECONDS.sleep(100); // just wait for cache, not lock
                 RedirectView otherThreadMayRecachedInMySleepTime = buildRedirectFrom2CacheOrNull(cachedKey);
 
-                RedirectView retryView = new RedirectView(RETRY_URL);
+                RedirectView retryView = new RedirectView(FrontPages.RETRY_URL);
                 Map<String, String> attrs = Map.of("uri", uri);
                 retryView.setAttributesMap(attrs);
 
@@ -141,7 +142,7 @@ public class RedirectController {
 
     @DeleteMapping("/del/{uri}")
     public Result<?> delete(@PathVariable String uri) {
-        Long id = Longs.tryParse(IdBase62Convertor.base62ToIdStr(uri));
+        Long id = Longs.tryParse(IdBase62Convertor.base62ToIdStrOrNull(uri));
         if (id == null) {
             BizException.throw_("incorrect short link");
         }
