@@ -10,7 +10,7 @@ import org.apache.shardingsphere.sharding.api.sharding.standard.StandardSharding
 import java.util.*;
 
 @Slf4j
-public class IdTimeStampStandardShardingAlgorithm implements StandardShardingAlgorithm<Long> {
+public class IdTimeStampStandardShardingAlgorithm implements StandardShardingAlgorithm<Long>{
 
     public static final YearMonthShardingTableVals staticYearMonthShardingTableVals = YearMonthShardingTableVals.staticYearMonthShardingTableVals;
 
@@ -46,5 +46,4 @@ public class IdTimeStampStandardShardingAlgorithm implements StandardShardingAlg
     public String getType() {
         return "ID_DATETIME";
     }
-
 }

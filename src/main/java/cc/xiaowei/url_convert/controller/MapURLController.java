@@ -48,14 +48,14 @@ public class MapURLController {
         URLMap mapped = new URLMap();
         mapped.setId(id);
         mapped.setUrl(url);
-        rabbitTemplate.convertAndSend(RabbitConsts.TOPIC_EXCHANGE, RabbitConsts.CONVERTED_ROUTING_KEY, mapped);
+        rabbitTemplate.convertAndSend(RabbitConsts.TOPIC_EXCHANGE, RabbitConsts.MAPPED_ROUTING_KEY, mapped);
 
         return Result.success(converted_url);
     }
 
     @GetMapping("/statistics")
     public Result<Long> statistics() {
-        Number count = Cast.cast(redisTemplate.opsForValue().get("statistics:convert_count"), Number.class);
+        Number count = Cast.cast(redisTemplate.opsForValue().get(RedisConsts.STATISTICS_MAPPED_COUNT_KEY), Number.class);
         if (count == null) {
             return Result.success(0L);
         }

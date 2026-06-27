@@ -23,7 +23,6 @@ public class YearMonthShardingTableVals {
     private DateTimeFormatter datePattern;
     private YearMonth lowerDate;
     private YearMonth upperDate;
-
     private final Collection<String> shardingTables = new LinkedList<>();
     public static YearMonthShardingTableVals staticYearMonthShardingTableVals;
 

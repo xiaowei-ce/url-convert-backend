@@ -32,10 +32,10 @@ public class MappedCounter {
 
 
     @Async
-    @Scheduled(fixedDelay = 10000 * 30)
+    @Scheduled(fixedDelay = 1000 * 30)
     public void update(){
         long localCount = longAdder.sumThenReset();
-        if (localCount == 0) return;
+        if (localCount <= 0) return;
         redisTemplate.opsForValue().increment(RedisConsts.STATISTICS_MAPPED_COUNT_KEY, localCount);
         log.info("update convert count:{}", localCount);
     }

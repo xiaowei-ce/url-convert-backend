@@ -25,13 +25,13 @@ public class RabbitMQConfig {
 
     @RabbitListener(
             bindings = @QueueBinding(
-                    value = @Queue(name = RabbitConsts.CONVERTED_QUEUE, durable = "true"),
+                    value = @Queue(name = RabbitConsts.MAPPED_QUEUE, durable = "true"),
                     exchange = @Exchange(name = RabbitConsts.TOPIC_EXCHANGE, durable = "true"),
-                    key = {RabbitConsts.CONVERTED_ROUTING_KEY}
+                    key = {RabbitConsts.MAPPED_ROUTING_KEY}
             ),
             concurrency = "3"
     )
-    public  void converted(URLMap mapped) {
+    public  void mappedInsert(URLMap mapped) {
         log.info("received: {}",mapped);
         uRLMapMapper.insert(mapped);
     }
@@ -47,8 +47,8 @@ public class RabbitMQConfig {
     )
     public void delete(Long id) {
         log.info("delete {}",id);
-        redisTemplate.delete(RedisConsts.MAPPED_REDIS_KEY_REFIX + id);
         uRLMapMapper.deleteById(id);
+        redisTemplate.delete(RedisConsts.MAPPED_REDIS_KEY_REFIX + id);
     }
 
 

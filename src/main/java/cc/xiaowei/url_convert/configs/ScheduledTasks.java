@@ -2,9 +2,10 @@ package cc.xiaowei.url_convert.configs;
 
 import cc.xiaowei.url_convert.Application;
 import cc.xiaowei.url_convert.properties.YearMonthShardingTableVals;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -34,7 +35,7 @@ public class ScheduledTasks {
                         COLLATE = utf8mb4_0900_ai_ci;
             """;
 
-    @PostConstruct
+    @EventListener(ApplicationReadyEvent.class)
     private void currentMonthServiceStart() {
         YearMonth serviceStartYearMonth = YearMonth.now(Application.ZONE_ID);
         shardingTableCreate(serviceStartYearMonth);

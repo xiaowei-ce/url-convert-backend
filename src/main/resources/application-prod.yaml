@@ -9,7 +9,7 @@ spring:
     driver-class-name: org.apache.shardingsphere.driver.ShardingSphereDriver
     url: jdbc:shardingsphere:classpath:sharding-jdbc.yaml
     hikari:
-      initialization-fail-timeout: 10
+      initialization-fail-timeout: 30
       minimum-idle: 5
       connection-timeout: 10000
   rabbitmq:
