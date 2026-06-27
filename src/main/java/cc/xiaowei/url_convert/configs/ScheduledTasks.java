@@ -36,7 +36,6 @@ public class ScheduledTasks {
 
     @PostConstruct
     private void init() {
-        log.info("init");
         YearMonth yearMonthNow = YearMonth.now(Application.ZONE_ID);
         createTable(yearMonthNow);
     }
