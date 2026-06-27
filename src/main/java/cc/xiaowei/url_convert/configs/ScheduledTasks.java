@@ -35,19 +35,19 @@ public class ScheduledTasks {
             """;
 
     @PostConstruct
-    private void init() {
-        YearMonth yearMonthNow = YearMonth.now(Application.ZONE_ID);
-        createTable(yearMonthNow);
+    private void currentMonthServiceStart() {
+        YearMonth serviceStartYearMonth = YearMonth.now(Application.ZONE_ID);
+        shardingTableCreate(serviceStartYearMonth);
     }
 
     @Scheduled(cron = "0 0 4 1 *  ?", zone = "Asia/Shanghai")
-    public void shardingTablesCreate() {
+    public void NextMonth() {
         YearMonth yearMonthNext = YearMonth.now(Application.ZONE_ID).plusMonths(1);
-        createTable(yearMonthNext);
+        shardingTableCreate(yearMonthNext);
     }
 
 
-    private void createTable(YearMonth yearMonth) {
+    private void shardingTableCreate(YearMonth yearMonth) {
         if (yearMonth.isAfter(yearMonthShardingTableVals.getUpperDate()) || yearMonth.isBefore(yearMonthShardingTableVals.getLowerDate())) {
             log.error("check sharding date config: lower-date < now < upper-date");
             return;
