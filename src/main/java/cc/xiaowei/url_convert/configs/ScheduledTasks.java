@@ -34,9 +34,8 @@ public class ScheduledTasks {
                         COLLATE = utf8mb4_0900_ai_ci;
             """;
 
-
     @PostConstruct
-    private void init(){
+    private void init() {
         log.info("init");
         YearMonth yearMonthNow = YearMonth.now(Application.ZONE_ID);
         createTable(yearMonthNow);
@@ -44,13 +43,12 @@ public class ScheduledTasks {
 
     @Scheduled(cron = "0 0 4 1 *  ?", zone = "Asia/Shanghai")
     public void shardingTablesCreate() {
-        //todo mq
         YearMonth yearMonthNext = YearMonth.now(Application.ZONE_ID).plusMonths(1);
-       createTable(yearMonthNext);
+        createTable(yearMonthNext);
     }
 
 
-    private void createTable(YearMonth yearMonth){
+    private void createTable(YearMonth yearMonth) {
         if (yearMonth.isAfter(yearMonthShardingTableVals.getUpperDate()) || yearMonth.isBefore(yearMonthShardingTableVals.getLowerDate())) {
             log.error("check sharding date config: lower-date < now < upper-date");
             return;
@@ -59,7 +57,8 @@ public class ScheduledTasks {
         try {
             jdbcTemplate.execute(CREATE_TABLE_SQL.formatted(tableName));
         } catch (Exception e) {
-            log.error("create table {} fail",tableName, e);
+            //todo record and retry by mq
+            log.error("create table {} fail", tableName, e);
         }
     }
 
