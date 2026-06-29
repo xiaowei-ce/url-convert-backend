@@ -13,6 +13,13 @@ import java.time.format.DateTimeFormatter;
 @RequiredArgsConstructor
 public class IDFactory {
 
+    /*
+
+        |     32bits     |     32bits     |
+        |   分钟级时间戳   |     自增数      |
+
+    */
+
     private final static long START_STAMP_SEC_UTC = 1782345600L; //2026-06-25 00:00:00 UTC
     private final static byte INCREMENT_BITS = 32;
     private final static DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy:MM:dd");
@@ -24,15 +31,20 @@ public class IDFactory {
         ZonedDateTime zonedDateTime = Instant.ofEpochSecond(timestamp_sec_utc).atZone(Application.ZONE_ID);
         String incrementKey = RedisConsts.ID_INCREMENT_KEY_PREFIX + zonedDateTime.format(DATE_TIME_FORMATTER);
         long increment = redissonClient.getAtomicLong(incrementKey).incrementAndGet();
-        return (timestamp_sec_utc - START_STAMP_SEC_UTC) << INCREMENT_BITS | increment;
+
+        return ((timestamp_sec_utc - START_STAMP_SEC_UTC) / 60) << INCREMENT_BITS | increment;
     }
 
-    public static long extractTimeStampSecUTC(Long id){
-        return  (id >> INCREMENT_BITS) + START_STAMP_SEC_UTC;
+    public static long extractTimeStampSecUTC(long id){
+        return  (id >>> INCREMENT_BITS) * 60 + START_STAMP_SEC_UTC;
     }
 
-    public static YearMonth extractYearMonth(Long id){
+    public static YearMonth extractYearMonth(long id){
         long timestamp_sec_utc = extractTimeStampSecUTC(id);
         return YearMonth.from(Instant.ofEpochSecond(timestamp_sec_utc).atZone(Application.ZONE_ID));
+    }
+
+    public static long extractIncrement(long id){
+        return id & 0xFFFFFFFFL;
     }
 }
