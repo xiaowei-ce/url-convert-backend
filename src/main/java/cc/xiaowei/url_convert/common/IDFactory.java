@@ -1,17 +1,11 @@
 package cc.xiaowei.url_convert.common;
 
 import cc.xiaowei.url_convert.Application;
-import cc.xiaowei.url_convert.configs.RedisConsts;
-import lombok.RequiredArgsConstructor;
-import org.redisson.api.RedissonClient;
-import org.springframework.stereotype.Component;
 
-import java.time.*;
+import java.time.Instant;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 
-@Component
-@RequiredArgsConstructor
-public class IDFactory {
 
     /*
 
@@ -20,31 +14,29 @@ public class IDFactory {
 
     */
 
-    private final static long START_STAMP_SEC_UTC = 1782345600L; //2026-06-25 00:00:00 UTC
-    private final static byte INCREMENT_BITS = 32;
-    private final static DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy:MM:dd");
 
-    private final RedissonClient redissonClient;
 
-    public Long next(){
-        long timestamp_sec_utc = Instant.now().getEpochSecond();
-        ZonedDateTime zonedDateTime = Instant.ofEpochSecond(timestamp_sec_utc).atZone(Application.ZONE_ID);
-        String incrementKey = RedisConsts.ID_INCREMENT_KEY_PREFIX + zonedDateTime.format(DATE_TIME_FORMATTER);
-        long increment = redissonClient.getAtomicLong(incrementKey).incrementAndGet();
+public abstract class IDFactory {
 
-        return ((timestamp_sec_utc - START_STAMP_SEC_UTC) / 60) << INCREMENT_BITS | increment;
+    static long START_STAMP_SEC_UTC = 1782345600L; //2026-06-25 00:00:00 UTC
+    static byte INCREMENT_BITS = 32;
+    DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy:MM:dd");
+
+   abstract Long next();
+
+
+    static long extractTimeStampSecUTC(long id) {
+        return (id >>> INCREMENT_BITS) * 60 + START_STAMP_SEC_UTC;
     }
 
-    public static long extractTimeStampSecUTC(long id){
-        return  (id >>> INCREMENT_BITS) * 60 + START_STAMP_SEC_UTC;
-    }
-
-    public static YearMonth extractYearMonth(long id){
+    static YearMonth extractYearMonth(long id) {
         long timestamp_sec_utc = extractTimeStampSecUTC(id);
         return YearMonth.from(Instant.ofEpochSecond(timestamp_sec_utc).atZone(Application.ZONE_ID));
     }
 
-    public static long extractIncrement(long id){
+    static long extractIncrement(long id) {
         return id & 0xFFFFFFFFL;
     }
+
+
 }
