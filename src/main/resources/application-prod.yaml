@@ -1,10 +1,17 @@
+server-address: 127.0.0.1
 spring:
   data:
     redis:
-      host: debian-server
+      host: ${server-address}
       port: 6379
       database: 1
       password: wei5877261
+      sentinel:
+        master: master
+        nodes:
+          - 127.0.0.1:26379
+          - 127.0.0.1:26380
+          - 127.0.0.1:26381
   datasource:
     driver-class-name: org.apache.shardingsphere.driver.ShardingSphereDriver
     url: jdbc:shardingsphere:classpath:sharding-jdbc.yaml
@@ -13,7 +20,7 @@ spring:
       minimum-idle: 5
       connection-timeout: 10000
   rabbitmq:
-    host: debian-server
+    host: ${server-address}
     port: 5672
     username: root
     password: wei5877261

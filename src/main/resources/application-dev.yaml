@@ -1,31 +1,40 @@
+server-address: 172.18.241.206
+
 spring:
   data:
     redis:
-      host: localhost
+      host: ${server-address}
       port: 6379
-      database: 0
+      database: 1
       password: wei5877261
-
+      sentinel:
+        master: master
+        nodes:
+          - 127.0.0.1:26379
+          - 127.0.0.1:26380
+          - 127.0.0.1:26381
   datasource:
-    url:
-    username:
-    password:
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    driver-class-name: org.apache.shardingsphere.driver.ShardingSphereDriver
+    url: jdbc:shardingsphere:classpath:sharding-jdbc.yaml
+    hikari:
+      initialization-fail-timeout: 30
+      minimum-idle: 5
+      connection-timeout: 10000
   rabbitmq:
-    host:
+    host: ${server-address}
     port: 5672
     username: root
     password: wei5877261
     virtual-host: /url-convert
     connection-timeout: 500ms
-    #publisher confirm, publisher return
+    #生产者确认，当消息到达exchange是返回ACK，否则返回NACK
     publisher-confirm-type: correlated
+    #生产者退回，消息到达交换机后但路由失败，把消息返回生产者
     publisher-returns: true
-
     template:
-      #路由失败返回 route failed return
+      #路由失败返回
       mandatory: true
-      #retry
+      #重试
       retry:
         enabled: true
         initial-interval: 500ms
@@ -34,3 +43,4 @@ spring:
     listener:
       direct:
         prefetch: 1
+        acknowledge-mode: manual
