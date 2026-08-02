@@ -42,7 +42,7 @@ public class RedirectController {
 
     private final Cache<String, String> localCache = CacheBuilder.newBuilder()
             .maximumSize(10_000)
-            .expireAfterAccess(30, TimeUnit.SECONDS)
+            .expireAfterAccess(15, TimeUnit.SECONDS)
             .initialCapacity(200)
             .build();
 
@@ -60,7 +60,7 @@ public class RedirectController {
         if (id == null) {
             return NOT_FOUND;
         }
-        String cachedKey = RedisConsts.MAPPED_REDIS_KEY_REFIX + id;
+        String cachedKey = RedisConsts.URLMAP_CACHE_KEY_REFIX + id;
 
         //try local & redis cache
         RedirectView firstTryGet = buildRedirectFrom2CacheOrNull(cachedKey);
@@ -147,10 +147,10 @@ public class RedirectController {
             BizException.throw_("incorrect short link");
         }
 
-        String key = RedisConsts.MAPPED_REDIS_KEY_REFIX + id;
+        String key = RedisConsts.URLMAP_CACHE_KEY_REFIX + id;
         redisTemplate.delete(key);
-        localCache.invalidate(key);
-        rabbitTemplate.convertAndSend(RabbitConsts.TOPIC_EXCHANGE, RabbitConsts.DELETE_ROUTING_KEY, id);
+//        localCache.invalidate(key);
+        rabbitTemplate.convertAndSend(RabbitConsts.URLMAP.TOPIC_EXCHANGE, RabbitConsts.URLMAP.DEL_GLOBAL_ROUTING_KEY, id);
         return Result.success(null);
     }
 
@@ -164,6 +164,10 @@ public class RedirectController {
             redirectView.setAttributesMap(attrs);
         }
         return redirectView;
+    }
+
+    public void deleteLocalCached(String key){
+        localCache.invalidate(key);
     }
 
 }

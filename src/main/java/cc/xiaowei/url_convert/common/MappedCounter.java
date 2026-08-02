@@ -25,6 +25,7 @@ public class MappedCounter {
     public void pointCut() {
         try {
             longAdder.increment();
+
         } catch (Exception e) {
             log.error("increment fail", e);
         }
@@ -36,7 +37,7 @@ public class MappedCounter {
     public void update(){
         long localCount = longAdder.sumThenReset();
         if (localCount <= 0) return;
-        redisTemplate.opsForValue().increment(RedisConsts.STATISTICS_MAPPED_COUNT_KEY, localCount);
+        redisTemplate.opsForValue().increment(RedisConsts.STATISTICS_URLMAP_OK_COUNT_KEY, localCount);
         log.info("update convert count:{}", localCount);
     }
 

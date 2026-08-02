@@ -43,19 +43,19 @@ public class MapURLController {
             BizException.throw_("URL map failed");
         }
         String converted_url = String.format("%s/%s", SERVER_DOMAIN, mappedUri);
-        redisTemplate.opsForValue().set(RedisConsts.MAPPED_REDIS_KEY_REFIX + id, url,12 , TimeUnit.HOURS);
+        redisTemplate.opsForValue().set(RedisConsts.URLMAP_CACHE_KEY_REFIX + id, url,12 , TimeUnit.HOURS);
 
         URLMap mapped = new URLMap();
         mapped.setId(id);
         mapped.setUrl(url);
-        rabbitTemplate.convertAndSend(RabbitConsts.TOPIC_EXCHANGE, RabbitConsts.MAPPED_ROUTING_KEY, mapped);
+        rabbitTemplate.convertAndSend(RabbitConsts.URLMAP.TOPIC_EXCHANGE, RabbitConsts.URLMAP.FINISHED_ROUTING_KEY, mapped);
 
         return Result.success(converted_url);
     }
 
     @GetMapping("/statistics")
     public Result<Long> statistics() {
-        Number count = Cast.cast(redisTemplate.opsForValue().get(RedisConsts.STATISTICS_MAPPED_COUNT_KEY), Number.class);
+        Number count = Cast.cast(redisTemplate.opsForValue().get(RedisConsts.STATISTICS_URLMAP_OK_COUNT_KEY), Number.class);
         if (count == null) {
             return Result.success(0L);
         }

@@ -1,3 +1,4 @@
+server-no: 0
 spring:
   main:
     allow-bean-definition-overriding: true

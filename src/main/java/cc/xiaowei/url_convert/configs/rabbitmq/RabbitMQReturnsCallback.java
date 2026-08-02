@@ -16,14 +16,14 @@ public class RabbitMQReturnsCallback implements RabbitTemplate.ReturnsCallback {
     private final RabbitTemplate rabbitTemplate;
 
     @PostConstruct
-    public void init() {
+    public void set() {
         rabbitTemplate.setReturnsCallback(this);
     }
 
     @Override
     public void returnedMessage(@NonNull ReturnedMessage returned) {
         log.info("message returned: {}", returned);
-//        republish(returned);
+        republish(returned);
     }
 
     public void republish(ReturnedMessage returned) {

@@ -6,13 +6,13 @@ dataSources:
   master:
     dataSourceClassName: com.zaxxer.hikari.HikariDataSource
     driverClassName: com.mysql.cj.jdbc.Driver
-    jdbcUrl: jdbc:mysql://debian-server:3307/url-convert?allowPublicKeyRetrieval=true
+    jdbcUrl: jdbc:mysql://127.0.0.1:3307/url-convert?allowPublicKeyRetrieval=true
     username: root
     password: wei5877261
   slave:
     dataSourceClassName: com.zaxxer.hikari.HikariDataSource
     driverClassName: com.mysql.cj.jdbc.Driver
-    jdbcUrl: jdbc:mysql://debian-server:3308/url-convert?allowPublicKeyRetrieval=true
+    jdbcUrl: jdbc:mysql://127.0.0.1:3308/url-convert?allowPublicKeyRetrieval=true
     username: root
     password: wei5877261
 

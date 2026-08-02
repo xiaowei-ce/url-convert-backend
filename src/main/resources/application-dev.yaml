@@ -1,9 +1,7 @@
-server-address: 172.18.241.206
-
 spring:
   data:
     redis:
-      host: ${server-address}
+      host: 127.0.0.1
       port: 6379
       database: 1
       password: wei5877261
@@ -21,26 +19,30 @@ spring:
       minimum-idle: 5
       connection-timeout: 10000
   rabbitmq:
-    host: ${server-address}
+    host: 127.0.0.1
     port: 5672
     username: root
     password: wei5877261
     virtual-host: /url-convert
-    connection-timeout: 500ms
-    #生产者确认，当消息到达exchange是返回ACK，否则返回NACK
-    publisher-confirm-type: correlated
-    #生产者退回，消息到达交换机后但路由失败，把消息返回生产者
-    publisher-returns: true
+    connection-timeout: 200ms
     template:
-      #路由失败返回
-      mandatory: true
-      #重试
-      retry:
+      retry:     #连接超时重试
         enabled: true
-        initial-interval: 500ms
+        initial-interval: 100ms
         multiplier: 1
-        max-attempts: 3
+        max-attempts: 2
+      mandatory: true       #路由失败返回
+
     listener:
-      direct:
+      type: simple
+      simple:
+        concurrency: 1
+        max-concurrency: 4
         prefetch: 1
-        acknowledge-mode: manual
+        acknowledge-mode: auto  #消费者确认模式：自动
+        retry:
+          enabled: false #消费者不要本地重试，而是队列重试
+
+
+    publisher-confirm-type: correlated   #生产者确认模式，发布后触发回调
+    publisher-returns: true  #生产者退回，消息到达交换机后但路由失败，把消息返回生产者

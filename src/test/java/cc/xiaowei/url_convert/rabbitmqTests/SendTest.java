@@ -19,6 +19,6 @@ public class SendTest {
 
     @Test
     public void test(){
-        rabbitTemplate.convertAndSend(RabbitConsts.TOPIC_EXCHANGE,"back_to_me","test msg");
+        rabbitTemplate.convertAndSend(RabbitConsts.URLMAP.TOPIC_EXCHANGE,"back_to_me","test msg");
     }
 }

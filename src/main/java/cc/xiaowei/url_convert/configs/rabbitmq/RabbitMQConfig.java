@@ -1,6 +1,7 @@
 package cc.xiaowei.url_convert.configs.rabbitmq;
 
 import cc.xiaowei.url_convert.configs.RedisConsts;
+import cc.xiaowei.url_convert.controller.RedirectController;
 import cc.xiaowei.url_convert.entity.URLMap;
 import cc.xiaowei.url_convert.mapper.URLMapMapper;
 import lombok.RequiredArgsConstructor;
@@ -22,16 +23,17 @@ public class RabbitMQConfig {
 
     private final RedisTemplate<String, Object> redisTemplate;
     private final URLMapMapper uRLMapMapper;
+    private final RedirectController redirectController;
 
     @RabbitListener(
             bindings = @QueueBinding(
-                    value = @Queue(name = RabbitConsts.MAPPED_QUEUE, durable = "true"),
-                    exchange = @Exchange(name = RabbitConsts.TOPIC_EXCHANGE, durable = "true"),
-                    key = {RabbitConsts.MAPPED_ROUTING_KEY}
+                    value = @Queue(name = "urlmap.map_finished", durable = "true"),
+                    exchange = @Exchange(name = RabbitConsts.URLMAP.TOPIC_EXCHANGE, durable = "true"),
+                    key = {RabbitConsts.URLMAP.FINISHED_ROUTING_KEY}
             ),
-            concurrency = "10"
+            concurrency = "1"
     )
-    public  void mappedInsert(URLMap mapped) {
+    public  void urlmapInsert(URLMap mapped) {
         log.info("received: {}",mapped);
         uRLMapMapper.insert(mapped);
     }
@@ -39,16 +41,31 @@ public class RabbitMQConfig {
 
     @RabbitListener(
             bindings = @QueueBinding(
-                    value = @Queue(name = RabbitConsts.DELETE_QUEUE, durable = "true"),
-                    exchange = @Exchange(name = RabbitConsts.TOPIC_EXCHANGE, durable = "true"),
-                    key = {RabbitConsts.DELETE_ROUTING_KEY}
+                    value = @Queue(name = "urlmap.del.redis_db", durable = "true"),
+                    exchange = @Exchange(name = RabbitConsts.URLMAP.TOPIC_EXCHANGE, durable = "true"),
+                    key = {RabbitConsts.URLMAP.DEL_ROUTING_KEY_PREFIX + "redis_db"}
             ),
-            concurrency = "3"
+            concurrency = "1"
     )
-    public void delete(Long id) {
+    public void urlMapDelete(Long id) {
         log.info("delete {}",id);
         uRLMapMapper.deleteById(id);
-        redisTemplate.delete(RedisConsts.MAPPED_REDIS_KEY_REFIX + id);
+        redisTemplate.delete(RedisConsts.URLMAP_CACHE_KEY_REFIX + id);
+    }
+
+
+
+    @RabbitListener(
+            bindings = @QueueBinding(
+                    value = @Queue(name = "urlmap.del.localcache." + "${server-no}", durable = "true"),
+                    exchange = @Exchange(name = RabbitConsts.URLMAP.TOPIC_EXCHANGE, durable = "true"),
+                    key = {RabbitConsts.URLMAP.DEL_ROUTING_KEY_PREFIX + "localcache"}
+            )
+    )
+    public void deleteLocalCache(Long id){
+        String key = RedisConsts.URLMAP_CACHE_KEY_REFIX + id;
+        log.info("delete localcached key:{}",key);
+        redirectController.deleteLocalCached(key);
     }
 
 

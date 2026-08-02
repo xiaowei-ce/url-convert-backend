@@ -15,17 +15,18 @@ public class RabbitMQConfirmCallback implements RabbitTemplate.ConfirmCallback {
 
     private final RabbitTemplate rabbitTemplate;
     @PostConstruct
-    public void init() {
+    public void set() {
         rabbitTemplate.setConfirmCallback(this);
     }
 
+    //消息到达exchange就返回ACK，否则返回NACK
     @Override
     public void confirm(@Nullable CorrelationData correlationData, boolean ack, @Nullable String cause) {
         if (ack){
             log.info("publish ok: {}", correlationData);
         }else  {
             log.error("publish failed: {}", correlationData);
-//            republish(correlationData,cause);
+            republish(correlationData,cause);
         }
     }
 
