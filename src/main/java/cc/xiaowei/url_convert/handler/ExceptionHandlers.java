@@ -1,6 +1,6 @@
 package cc.xiaowei.url_convert.handler;
 
-import cc.xiaowei.url_convert.common.FrontPages;
+import cc.xiaowei.url_convert.common.FrontPagesURL;
 import cc.xiaowei.url_convert.entity.Result;
 import cc.xiaowei.url_convert.exception.BizException;
 import cc.xiaowei.url_convert.exception.RedirectException;
@@ -24,7 +24,7 @@ public class ExceptionHandlers {
     @ExceptionHandler(RedirectException.class)
     public RedirectView redirectException(RedirectException exp){
         log.error("redirect err ",exp);
-        RedirectView errView = new RedirectView(FrontPages.ERR_URL);
+        RedirectView errView = new RedirectView(FrontPagesURL.ERR_URL);
         Map<String, String> attrs = Map.of("cause", exp.getMessage());
         errView.setAttributesMap(attrs);
         return errView;
@@ -33,7 +33,7 @@ public class ExceptionHandlers {
     @ExceptionHandler(Exception.class)
     public RedirectView exception(Exception exp){
         log.error("unknow err ",exp);
-        RedirectView errView = new RedirectView(FrontPages.ERR_URL);
+        RedirectView errView = new RedirectView(FrontPagesURL.ERR_URL);
         Map<String, String> attrs = Map.of("cause", exp.getMessage());
         errView.setAttributesMap(attrs);
         return errView;

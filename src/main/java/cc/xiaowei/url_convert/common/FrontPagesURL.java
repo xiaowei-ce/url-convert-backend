@@ -1,6 +1,6 @@
 package cc.xiaowei.url_convert.common;
 
-public class FrontPages {
+public class FrontPagesURL {
 
     private static final String FRONT_URL = "http://localhost:5173";
     public static final String NOT_FOUND_URL = FRONT_URL + "/not-found.html";

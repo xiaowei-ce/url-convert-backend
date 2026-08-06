@@ -1,7 +1,7 @@
 package cc.xiaowei.url_convert.controller;
 
 import cc.xiaowei.url_convert.common.Cast;
-import cc.xiaowei.url_convert.common.FrontPages;
+import cc.xiaowei.url_convert.common.FrontPagesURL;
 import cc.xiaowei.url_convert.common.IdBase62Convertor;
 import cc.xiaowei.url_convert.configs.RedisConsts;
 import cc.xiaowei.url_convert.configs.rabbitmq.RabbitConsts;
@@ -46,14 +46,14 @@ public class RedirectController {
             .initialCapacity(200)
             .build();
 
-    private final RedirectView NOT_FOUND = new RedirectView(FrontPages.NOT_FOUND_URL);
+    private final RedirectView NOT_FOUND = new RedirectView(FrontPagesURL.NOT_FOUND_URL);
     private final URLMapMapper uRLMapMapper;
 
 
     @GetMapping("/{uri}")
     public RedirectView redirect(@PathVariable String uri) {
         String idStrOrNull = IdBase62Convertor.base62ToIdStrOrNull(uri);
-        if (idStrOrNull == null){
+        if (idStrOrNull == null) {
             return NOT_FOUND;
         }
         Long id = Longs.tryParse(idStrOrNull);
@@ -63,35 +63,35 @@ public class RedirectController {
         String cachedKey = RedisConsts.URLMAP_CACHE_KEY_REFIX + id;
 
         //try local & redis cache
-        RedirectView firstTryGet = buildRedirectFrom2CacheOrNull(cachedKey);
-        if (firstTryGet != null){
+        RedirectView firstTryGet = buildRedirectFromCacheElseNull(cachedKey);
+        if (firstTryGet != null) {
             return firstTryGet;
         }
 
         //update local & redis cache with locked if not hit
-        String lockKey = ""+id;
+        String lockKey = "" + id;
         RLock lock = redisson.getLock(lockKey);
-        try {
-            if (!lock.tryLock()) {
+
+        //lock fail
+        if (!lock.tryLock()) {
+            try {
                 TimeUnit.MILLISECONDS.sleep(100); // just wait for cache, not lock
-                RedirectView otherThreadMayRecachedInMySleepTime = buildRedirectFrom2CacheOrNull(cachedKey);
-
-                RedirectView retryView = new RedirectView(FrontPages.RETRY_URL);
-                Map<String, String> attrs = Map.of("uri", uri);
-                retryView.setAttributesMap(attrs);
-
-                return Objects.requireNonNullElse(otherThreadMayRecachedInMySleepTime, retryView);
+            } catch (InterruptedException e) {
+                RedirectException.throw_(e.getMessage());
             }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            RedirectException.throw_(e.getMessage());
+
+            //other thread maybe recached in sleep time
+            RedirectView checkAfterSleep = buildRedirectFromCacheElseNull(cachedKey);
+            return Objects.requireNonNullElse(checkAfterSleep,
+                    buildRedirect(FrontPagesURL.RETRY_URL,Map.of("uri",uri))); //retry if null
         }
 
+        //lock success
         try {
-            //double check redis & local if got lock
-            RedirectView aReadyGotLockButCheckAgainCauseOtherThreadMayRecached = buildRedirectFrom2CacheOrNull(cachedKey);
-            if (aReadyGotLockButCheckAgainCauseOtherThreadMayRecached != null){
-                return aReadyGotLockButCheckAgainCauseOtherThreadMayRecached;
+            //other thread maybe recached
+            RedirectView doubleCheck = buildRedirectFromCacheElseNull(cachedKey);
+            if (doubleCheck != null) {
+                return doubleCheck;
             }
 
             URLMap mapped = uRLMapMapper.selectById(id);
@@ -114,7 +114,7 @@ public class RedirectController {
     }
 
 
-    private @Nullable RedirectView buildRedirectFrom2CacheOrNull(@NonNull String cachedKey){
+    private @Nullable RedirectView buildRedirectFromCacheElseNull(@NonNull String cachedKey) {
 
         //try local
         String localCached = localCache.getIfPresent(cachedKey);
@@ -149,7 +149,6 @@ public class RedirectController {
 
         String key = RedisConsts.URLMAP_CACHE_KEY_REFIX + id;
         redisTemplate.delete(key);
-//        localCache.invalidate(key);
         rabbitTemplate.convertAndSend(RabbitConsts.URLMAP.TOPIC_EXCHANGE, RabbitConsts.URLMAP.DEL_GLOBAL_ROUTING_KEY, id);
         return Result.success(null);
     }
@@ -158,15 +157,15 @@ public class RedirectController {
         return ThreadLocalRandom.current().nextInt(origin, bound);
     }
 
-    private RedirectView buildRedirect(String url,Map<String, ?> attrs){
+    private RedirectView buildRedirect(String url, Map<String, ?> attrs) {
         RedirectView redirectView = new RedirectView(url);
-        if (!attrs.isEmpty()){
+        if (!attrs.isEmpty()) {
             redirectView.setAttributesMap(attrs);
         }
         return redirectView;
     }
 
-    public void deleteLocalCached(String key){
+    public void deleteLocalCached(String key) {
         localCache.invalidate(key);
     }
 
