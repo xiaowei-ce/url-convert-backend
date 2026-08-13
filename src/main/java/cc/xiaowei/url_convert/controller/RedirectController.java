@@ -2,7 +2,7 @@ package cc.xiaowei.url_convert.controller;
 
 import cc.xiaowei.url_convert.common.Cast;
 import cc.xiaowei.url_convert.common.FrontPagesURL;
-import cc.xiaowei.url_convert.common.IdBase62Convertor;
+import cc.xiaowei.url_convert.common.IdUriConvert;
 import cc.xiaowei.url_convert.configs.RedisConsts;
 import cc.xiaowei.url_convert.configs.rabbitmq.RabbitConsts;
 import cc.xiaowei.url_convert.entity.Result;
@@ -40,7 +40,7 @@ public class RedirectController {
     private final RabbitTemplate rabbitTemplate;
     private final RedissonClient redisson;
 
-    private final Cache<String, String> localCache = CacheBuilder.newBuilder()
+    private static final Cache<String, String> localCache = CacheBuilder.newBuilder()
             .maximumSize(10_000)
             .expireAfterAccess(15, TimeUnit.SECONDS)
             .initialCapacity(200)
@@ -52,14 +52,11 @@ public class RedirectController {
 
     @GetMapping("/{uri}")
     public RedirectView redirect(@PathVariable String uri) {
-        String idStrOrNull = IdBase62Convertor.base62ToIdStrOrNull(uri);
-        if (idStrOrNull == null) {
-            return NOT_FOUND;
-        }
-        Long id = Longs.tryParse(idStrOrNull);
+        Long id = IdUriConvert.uri2IdElseNull(uri);
         if (id == null) {
             return NOT_FOUND;
         }
+
         String cachedKey = RedisConsts.URLMAP_CACHE_KEY_REFIX + id;
 
         //try local & redis cache
@@ -142,7 +139,7 @@ public class RedirectController {
 
     @DeleteMapping("/del/{uri}")
     public Result<?> delete(@PathVariable String uri) {
-        Long id = Longs.tryParse(IdBase62Convertor.base62ToIdStrOrNull(uri));
+        Long id = IdUriConvert.uri2IdElseNull(uri);
         if (id == null) {
             BizException.throw_("incorrect short link");
         }
@@ -165,7 +162,7 @@ public class RedirectController {
         return redirectView;
     }
 
-    public void deleteLocalCached(String key) {
+    public static void deleteLocalCached(String key) {
         localCache.invalidate(key);
     }
 

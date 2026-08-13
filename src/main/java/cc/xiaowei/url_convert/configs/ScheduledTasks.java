@@ -37,6 +37,7 @@ public class ScheduledTasks {
 
     @EventListener(ApplicationReadyEvent.class)
     private void currentMonthServiceStart() {
+        standTableCreate();
         YearMonth serviceStartYearMonth = YearMonth.now(Application.ZONE_ID);
         shardingTableCreate(serviceStartYearMonth);
     }
@@ -60,6 +61,10 @@ public class ScheduledTasks {
             //todo record and retry by mq
             log.error("create table {} fail", tableName, e);
         }
+    }
+
+    private void standTableCreate(){
+        jdbcTemplate.execute(CREATE_TABLE_SQL.formatted("url_map"));
     }
 
 

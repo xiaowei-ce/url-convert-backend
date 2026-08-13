@@ -2,7 +2,7 @@ package cc.xiaowei.url_convert.controller;
 
 import cc.xiaowei.url_convert.common.CachedIDFactory;
 import cc.xiaowei.url_convert.common.Cast;
-import cc.xiaowei.url_convert.common.IdBase62Convertor;
+import cc.xiaowei.url_convert.common.IdUriConvert;
 import cc.xiaowei.url_convert.configs.RedisConsts;
 import cc.xiaowei.url_convert.configs.rabbitmq.RabbitConsts;
 import cc.xiaowei.url_convert.entity.Result;
@@ -38,7 +38,7 @@ public class MapURLController {
         }
         Long id = cachedIDFactory.next();
 
-        String mappedUri = IdBase62Convertor.idToBase62str(id);
+        String mappedUri = IdUriConvert.id2Uri(id);
         if (Strings.isNullOrEmpty(mappedUri)) {
             BizException.throw_("URL map failed");
         }

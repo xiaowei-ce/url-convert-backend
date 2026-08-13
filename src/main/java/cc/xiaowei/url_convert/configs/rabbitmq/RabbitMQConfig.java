@@ -14,6 +14,7 @@ import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.redis.core.RedisTemplate;
 
 @Slf4j
@@ -23,7 +24,6 @@ public class RabbitMQConfig {
 
     private final RedisTemplate<String, Object> redisTemplate;
     private final URLMapMapper uRLMapMapper;
-    private final RedirectController redirectController;
 
     @RabbitListener(
             bindings = @QueueBinding(
@@ -65,7 +65,7 @@ public class RabbitMQConfig {
     public void deleteLocalCache(Long id){
         String key = RedisConsts.URLMAP_CACHE_KEY_REFIX + id;
         log.info("delete localcached key:{}",key);
-        redirectController.deleteLocalCached(key);
+        RedirectController.deleteLocalCached(key);
     }
 
 

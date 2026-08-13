@@ -5,23 +5,17 @@ spring:
       port: 6379
       database: 1
       password: wei5877261
-      sentinel:
-        master: master
-        nodes:
-          - 127.0.0.1:26379
-          - 127.0.0.1:26380
-          - 127.0.0.1:26381
   datasource:
-    driver-class-name: org.apache.shardingsphere.driver.ShardingSphereDriver
-    url: jdbc:shardingsphere:classpath:sharding-jdbc.yaml
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306
     hikari:
-      initialization-fail-timeout: 3000
+      initialization-fail-timeout: 30
       minimum-idle: 5
-      connection-timeout: 10000
+      connection-timeout: 500
   rabbitmq:
     host: 127.0.0.1
     port: 5672
-    username: url-convert-user
+    username: root
     password: wei5877261
     virtual-host: /url-convert
     connection-timeout: 200ms
@@ -42,6 +36,7 @@ spring:
         acknowledge-mode: auto  #消费者确认模式：自动
         retry:
           enabled: false #消费者不要本地重试，而是队列重试
+
 
     publisher-confirm-type: correlated   #生产者确认模式，发布后触发回调
     publisher-returns: true  #生产者退回，消息到达交换机后但路由失败，把消息返回生产者
