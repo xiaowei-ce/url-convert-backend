@@ -17,9 +17,6 @@ import java.nio.charset.StandardCharsets;
 public class MapURLControllerTest {
 
 
-    @Autowired
-    private CachedIDFactory cachedIDFactory;
-
     @Test
     public void mapURLTest(){
     }
