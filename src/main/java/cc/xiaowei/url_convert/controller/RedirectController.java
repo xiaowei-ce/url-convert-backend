@@ -1,13 +1,16 @@
 package cc.xiaowei.url_convert.controller;
 
+import cc.xiaowei.url_convert.Application;
 import cc.xiaowei.url_convert.common.Cast;
 import cc.xiaowei.url_convert.common.FrontPagesURL;
+import cc.xiaowei.url_convert.common.IDFactory;
 import cc.xiaowei.url_convert.common.IdUriConvert;
 import cc.xiaowei.url_convert.configs.RedisConsts;
 import cc.xiaowei.url_convert.configs.rabbitmq.RabbitConsts;
 import cc.xiaowei.url_convert.entity.Result;
 import cc.xiaowei.url_convert.entity.URLMap;
 import cc.xiaowei.url_convert.exception.BizException;
+import cc.xiaowei.url_convert.exception.NotFoundException;
 import cc.xiaowei.url_convert.exception.RedirectException;
 import cc.xiaowei.url_convert.mapper.URLMapMapper;
 import com.google.common.cache.Cache;
@@ -25,6 +28,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.view.RedirectView;
 
 import java.time.Duration;
+import java.time.YearMonth;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
@@ -46,15 +50,15 @@ public class RedirectController {
             .initialCapacity(200)
             .build();
 
-    private final RedirectView NOT_FOUND = new RedirectView(FrontPagesURL.NOT_FOUND_URL);
     private final URLMapMapper uRLMapMapper;
 
 
     @GetMapping("/{uri}")
     public RedirectView redirect(@PathVariable String uri) {
         Long id = IdUriConvert.uri2IdElseNull(uri);
-        if (id == null) {
-            return NOT_FOUND;
+
+        if (id == null || YearMonth.now(Application.ZONE_ID).isBefore(IDFactory.extractYearMonth(id))) {
+            NotFoundException._throw();
         }
 
         String cachedKey = RedisConsts.URLMAP_CACHE_KEY_REFIX + id;
@@ -95,7 +99,7 @@ public class RedirectController {
             if (mapped == null) {
                 redisTemplate.opsForValue().set(cachedKey, "", Duration.ofMinutes(15 + randomInt(-5, 15)));
                 localCache.put(cachedKey, "");
-                return NOT_FOUND;
+                NotFoundException._throw();
             }
 
             //recache redis & local
@@ -117,7 +121,7 @@ public class RedirectController {
         String localCached = localCache.getIfPresent(cachedKey);
         if (localCached != null) {
             if (localCached.isEmpty()) {
-                return NOT_FOUND;
+                NotFoundException._throw();
             }
             return new RedirectView(localCached);
         }
@@ -127,7 +131,7 @@ public class RedirectController {
         if (redisCached != null) {
             if (redisCached.isEmpty()) {
                 localCache.put(cachedKey, "");
-                return NOT_FOUND;
+                NotFoundException._throw();
             }
             localCache.put(cachedKey, redisCached);
             return new RedirectView(redisCached);
@@ -146,7 +150,7 @@ public class RedirectController {
 
         String key = RedisConsts.URLMAP_CACHE_KEY_REFIX + id;
         redisTemplate.delete(key);
-        rabbitTemplate.convertAndSend(RabbitConsts.URLMAP.TOPIC_EXCHANGE, RabbitConsts.URLMAP.DEL_GLOBAL_ROUTING_KEY, id);
+        rabbitTemplate.convertAndSend(RabbitConsts.URLMAP.TOPIC_EXCHANGE, RabbitConsts.URLMAP.DEL_ROUTING_KEY, id);
         return Result.success(null);
     }
 

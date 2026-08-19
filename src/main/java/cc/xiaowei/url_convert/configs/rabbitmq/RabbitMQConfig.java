@@ -6,6 +6,7 @@ import cc.xiaowei.url_convert.entity.URLMap;
 import cc.xiaowei.url_convert.mapper.URLMapMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.core.ExchangeTypes;
 import org.springframework.amqp.rabbit.annotation.Exchange;
 import org.springframework.amqp.rabbit.annotation.Queue;
 import org.springframework.amqp.rabbit.annotation.QueueBinding;
@@ -28,7 +29,7 @@ public class RabbitMQConfig {
     @RabbitListener(
             bindings = @QueueBinding(
                     value = @Queue(name = "urlmap.map_finished", durable = "true"),
-                    exchange = @Exchange(name = RabbitConsts.URLMAP.TOPIC_EXCHANGE, durable = "true"),
+                    exchange = @Exchange(name = RabbitConsts.URLMAP.TOPIC_EXCHANGE, durable = "true",type = ExchangeTypes.TOPIC),
                     key = {RabbitConsts.URLMAP.FINISHED_ROUTING_KEY}
             ),
             concurrency = "1"
@@ -42,8 +43,8 @@ public class RabbitMQConfig {
     @RabbitListener(
             bindings = @QueueBinding(
                     value = @Queue(name = "urlmap.del.redis_db", durable = "true"),
-                    exchange = @Exchange(name = RabbitConsts.URLMAP.TOPIC_EXCHANGE, durable = "true"),
-                    key = {RabbitConsts.URLMAP.DEL_ROUTING_KEY_PREFIX + "redis_db"}
+                    exchange = @Exchange(name = RabbitConsts.URLMAP.TOPIC_EXCHANGE, durable = "true", type = ExchangeTypes.TOPIC),
+                    key = RabbitConsts.URLMAP.DEL_ROUTING_KEY
             ),
             concurrency = "1"
     )
@@ -58,8 +59,8 @@ public class RabbitMQConfig {
     @RabbitListener(
             bindings = @QueueBinding(
                     value = @Queue(name = "urlmap.del.localcache." + "${server-no}", durable = "true"),
-                    exchange = @Exchange(name = RabbitConsts.URLMAP.TOPIC_EXCHANGE, durable = "true"),
-                    key = {RabbitConsts.URLMAP.DEL_ROUTING_KEY_PREFIX + "localcache"}
+                    exchange = @Exchange(name = RabbitConsts.URLMAP.TOPIC_EXCHANGE, durable = "true", type = ExchangeTypes.TOPIC),
+                    key = RabbitConsts.URLMAP.DEL_ROUTING_KEY
             )
     )
     public void deleteLocalCache(Long id){

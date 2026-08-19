@@ -1,12 +1,17 @@
 package cc.xiaowei.url_convert.common;
 
+import cc.xiaowei.url_convert.Application;
+import cc.xiaowei.url_convert.exception.NotFoundException;
+import cc.xiaowei.url_convert.exception.RedirectException;
 import cc.xiaowei.url_convert.properties.YearMonthShardingTableVals;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.infra.algorithm.core.exception.AlgorithmInitializationException;
+import org.apache.shardingsphere.infra.exception.kernel.metadata.TableNotFoundException;
 import org.apache.shardingsphere.sharding.api.sharding.standard.PreciseShardingValue;
 import org.apache.shardingsphere.sharding.api.sharding.standard.RangeShardingValue;
 import org.apache.shardingsphere.sharding.api.sharding.standard.StandardShardingAlgorithm;
 
+import java.time.YearMonth;
 import java.util.*;
 
 @Slf4j
@@ -26,10 +31,14 @@ public class IdTimeStampStandardShardingAlgorithm implements StandardShardingAlg
         availableTargetNames.addAll(staticYearMonthShardingTableVals.getShardingTables());
         log.info("doSharding availableTargetNames:{} shardingValue:{}", availableTargetNames, shardingValue);
 
-        String shardedTableName = staticYearMonthShardingTableVals.shardingTableNameFromFormattedYearMonth(IDFactory.extractYearMonth(shardingValue.getValue()));
+        YearMonth extractedYearMonth = IDFactory.extractYearMonth(shardingValue.getValue());
+
+        String shardedTableName = staticYearMonthShardingTableVals.shardingTableNameFromFormattedYearMonth(extractedYearMonth);
         if (!availableTargetNames.contains(shardedTableName)) {
             throw new AlgorithmInitializationException(this, "shardedTableNames not in availableTargetNames");
         }
+
+
         return shardedTableName;
     }
 

@@ -3,17 +3,22 @@ package cc.xiaowei.url_convert.handler;
 import cc.xiaowei.url_convert.common.FrontPagesURL;
 import cc.xiaowei.url_convert.entity.Result;
 import cc.xiaowei.url_convert.exception.BizException;
+import cc.xiaowei.url_convert.exception.NotFoundException;
 import cc.xiaowei.url_convert.exception.RedirectException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.UncategorizedSQLException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.view.RedirectView;
 
+import java.util.Arrays;
 import java.util.Map;
 
 @Slf4j
 @RestControllerAdvice
 public class ExceptionHandlers {
+
+    private final RedirectView NOT_FOUND = new RedirectView(FrontPagesURL.NOT_FOUND_URL);
 
     @ExceptionHandler(BizException.class)
     public Result<Object> bizException(BizException exp){
@@ -29,6 +34,13 @@ public class ExceptionHandlers {
         errView.setAttributesMap(attrs);
         return errView;
     }
+
+    @ExceptionHandler(NotFoundException.class)
+    public RedirectView notFound(NotFoundException exp){
+        log.error("notFound err",exp);
+        return NOT_FOUND;
+    }
+
 
     @ExceptionHandler(Exception.class)
     public RedirectView exception(Exception exp){

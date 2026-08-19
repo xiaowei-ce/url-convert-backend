@@ -16,7 +16,7 @@ class ApplicationTests {
 
     @Test
     void contextLoads() throws SQLException {
-        System.out.println(uRLMapMapper.selectById(867793847189506L));
+//        System.out.println(uRLMapMapper.selectById(867793847189506L));
     }
 
 }

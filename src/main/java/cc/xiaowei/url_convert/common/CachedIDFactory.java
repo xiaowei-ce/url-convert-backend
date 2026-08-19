@@ -2,6 +2,7 @@ package cc.xiaowei.url_convert.common;
 
 import cc.xiaowei.url_convert.Application;
 import cc.xiaowei.url_convert.configs.RedisConsts;
+import cc.xiaowei.url_convert.exception.BizException;
 import lombok.RequiredArgsConstructor;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Component;
@@ -14,7 +15,7 @@ public class CachedIDFactory extends IDFactory {
 
     private final RedissonClient redissonClient;
     private long offset = 0, end = 0; //[offset , end)
-    private final long STEP = 200L;
+    private final long STEP = 10L;
     private LocalDate lastCache;
 
     @Override
@@ -28,7 +29,11 @@ public class CachedIDFactory extends IDFactory {
         }
         if (offset >= end) {
             String incrementKey = RedisConsts.ID_INCREMENT_KEY_PREFIX + today.format(DATE_TIME_FORMATTER);
-            end = redissonClient.getAtomicLong(incrementKey).addAndGet(STEP);
+            long get = redissonClient.getAtomicLong(incrementKey).addAndGet(STEP);
+            if (get <= end){
+                BizException.throw_("fatal err !");
+            }
+            end = get;
             offset = end - STEP;
             lastCache = today;
         }

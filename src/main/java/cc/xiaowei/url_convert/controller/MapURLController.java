@@ -2,6 +2,7 @@ package cc.xiaowei.url_convert.controller;
 
 import cc.xiaowei.url_convert.common.CachedIDFactory;
 import cc.xiaowei.url_convert.common.Cast;
+import cc.xiaowei.url_convert.common.FrontPagesURL;
 import cc.xiaowei.url_convert.common.IdUriConvert;
 import cc.xiaowei.url_convert.configs.RedisConsts;
 import cc.xiaowei.url_convert.configs.rabbitmq.RabbitConsts;
@@ -22,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 @RequestMapping("/convert")
 public class MapURLController {
 
-    private static final String SERVER_DOMAIN = "http://localhost:8080";
 
     private static final UrlValidator urlValidator = new UrlValidator(UrlValidator.ALLOW_ALL_SCHEMES);
     private final RedisTemplate<String, Object> redisTemplate;
@@ -42,7 +42,7 @@ public class MapURLController {
         if (Strings.isNullOrEmpty(mappedUri)) {
             BizException.throw_("URL map failed");
         }
-        String converted_url = String.format("%s/%s", SERVER_DOMAIN, mappedUri);
+        String converted_url = FrontPagesURL.REDIRECT_BASE_URL + mappedUri;
         redisTemplate.opsForValue().set(RedisConsts.URLMAP_CACHE_KEY_REFIX + id, url,12 , TimeUnit.HOURS);
 
         URLMap mapped = new URLMap();

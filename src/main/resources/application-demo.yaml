@@ -7,7 +7,9 @@ spring:
       password: wei5877261
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://127.0.0.1:3306
+    url: jdbc:mysql://127.0.0.1:3306/url-convert
+    username: root
+    password: wei5877261
     hikari:
       initialization-fail-timeout: 30
       minimum-idle: 5
